@@ -50,21 +50,27 @@ if (!SUPER_USER) {
                 <h4>REDCap Data Duplicates</h4>
 
                 <div>
-                    <p>This job scans redcap_data project-by-project to detect duplicate record entries.</p>
+                    <p>This job scans redcap_data project-by-project to detect duplicate record entries.  Once found, you can 'repair' them and remove
+                    the duplicate entries.</p>
                     <ul>
                         <li>Having a backup is a REALLY good idea - this tool offers sufficient rope to hang yourself!</li>
+                        <li>The scanning process was throttled to a single thread to reduce the impact on your database.  This means it may take
+                            a long time to scan your entire redcap_data table, but other users' should be able to continue using the system with
+                            an acceptable impact to performance.</li>
+
                     </ul>
                 </div>
             </div>
         </div>
         <div>
             <p>
-                Step 1: Scan your REDCap data table for projects with repeat rows.  This could take a while...
+                <b>Step 1:</b> Scan your REDCap data table for projects with repeat rows.  This could take a while...
             </p>
             <p>
                 <button class="btn btn-primaryrc btn-sm" data-action="scan-projects">Scan All Projects</button>
             </p>
         </div>
+
         <div>
             <div class="progress hidden">
                 <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 25%;" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">25%</div>

@@ -151,24 +151,24 @@ dc.getAllProjects = function() {
 };
 
 dc.analyzeProjects = function() {
+
     dc.updateProgressBar(0);
     dc.showProgressBar();
     dc.projectCount = dc.projects.length - 1; //Object.keys(dc.allProjects).length;
     dc.projectIndex = 0;
+    dc.scanStart = new Date();
 
     // for (var key in dc.projects) dc.analyzeProject(key);
     dc.analysisQueue = [];
     for (var key in dc.projects) {
         if (key != "") dc.analysisQueue.push(key);
     }
-    // console.log(dc.analysisQueue);
-    // console.log(dc.analysisQueue.shift());
-    // console.log(dc.analysisQueue);
 
-    dc.analyzeProject2();
+    dc.analyzeProject();
 };
 
-dc.analyzeProject2 = function() {
+
+dc.analyzeProject = function() {
     if (dc.analysisQueue.length == 0) {
         console.log("Done");
         return true;
@@ -200,59 +200,68 @@ dc.analyzeProject2 = function() {
             dc.updateSummary();
         } else {
             // Get next queue member
-            dc.analyzeProject2()
+            dc.analyzeProject()
         }
     });
 };
 
 
 
-dc.analyzeProject = function(pid) {
-    $.ajax({
-        method: "POST",
-        url: dc.endpointUrl,
-        dataType: 'json',
-        data: { action: "analyze-project", project_id: pid},
-    }).done( function(result) {
-        console.log(pid, result);
-        var project = dc.projects[pid];
-        project.analysis = result;
-        // dc.projects[pid] = result;
-        dc.addRow(project)
-    }).always( function() {
-        dc.projectIndex++;
-        var percent = Math.round( dc.projectIndex / dc.projectCount * 100, 0);
-        dc.updateProgressBar(percent, percent + "% (" + dc.projectIndex + "/" + dc.projectCount + ")");
-        if (percent == 100) {
-            dc.hideWaitingModal();
-            dc.hideProgressBar();
-            dc.dataTable.draw();
-            dc.showDataTable();
-            dc.updateSummary();
-        }
-    });
-};
+// dc.analyzeProject = function(pid) {
+//     $.ajax({
+//         method: "POST",
+//         url: dc.endpointUrl,
+//         dataType: 'json',
+//         data: { action: "analyze-project", project_id: pid},
+//     }).done( function(result) {
+//         console.log(pid, result);
+//         var project = dc.projects[pid];
+//         project.analysis = result;
+//         // dc.projects[pid] = result;
+//         dc.addRow(project)
+//     }).always( function() {
+//         dc.projectIndex++;
+//         var percent = Math.round( dc.projectIndex / dc.projectCount * 100, 0);
+//         dc.updateProgressBar(percent, percent + "% (" + dc.projectIndex + "/" + dc.projectCount + ")");
+//         if (percent == 100) {
+//             dc.hideWaitingModal();
+//             dc.hideProgressBar();
+//             dc.dataTable.draw();
+//             dc.showDataTable();
+//             dc.updateSummary();
+//         }
+//     });
+// };
 
+dc.formatNumberWithCommas = function(x) {
+    var parts = x.toString().split(".");
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    return parts.join(".");
+};
 
 dc.updateSummary = function() {
     var total = dc.dataTable.columns(2).data().sum();
     var unique = dc.dataTable.columns(3).data().sum();
     var duplicates = dc.dataTable.columns(4).data().sum();
-    var duration = dc.dataTable.columns(5).data().sum();
+    var db_time = dc.dataTable.columns(5).data().sum();
+    var duration = (new Date - dc.scanStart) / 1000;
 
     console.log(total,unique,duplicates,duration);
 
     $('div.table-summary').remove();
     var ts = $('<div class="table-summary"/>')
-        .prepend("<span class='badge badge-secondary'>" + Number.parseFloat(duration/1000).toPrecision(3) + " sec DB Query Time</span>")
-        .prepend("<span class='badge badge-danger'>" + duplicates + " Duplicates</span>")
-        .prepend("<span class='badge badge-primary'>" + unique + " Unique Rows</span>")
-        .prepend("<span class='badge badge-secondary'>" + total + " Total Rows</span>")
+        .prepend("<span class='badge badge-secondary'>" + dc.formatNumberWithCommas(+(duration/60).toFixed(1)) + "min</span>")
+        .prepend("<span class='badge badge-secondary'>" + Number.parseFloat(db_time/1000).toPrecision(3) + "sec</span>")
+        // .prepend("<span class='badge badge-primary'>" + dc.formatNumberWithCommas(unique) + " Unique Rows</span>")
+        .prepend("<span class='badge badge-info'>" + dc.formatNumberWithCommas(total) + " Rows</span>")
+        .prepend("<span class='badge badge-success'>" + dc.formatNumberWithCommas(dc.projectIndex) + " Projects</span>")
+        .prepend("<span class='badge badge-danger'>" + dc.formatNumberWithCommas(duplicates) + " Duplicates Found</span>")
         .prepend("<hr>");
 
     $('.dataTable-container')
         .prepend(ts);
 };
+
 
 dc.addRow = function(project) {
 
@@ -276,7 +285,6 @@ dc.addRow = function(project) {
         dc.dataTable.row(existingRow).remove();
     }
 
-
     dc.dataTable.row.add(
         [
             project.pid,
@@ -291,7 +299,6 @@ dc.addRow = function(project) {
 
     dc.duplicateCount =+ project.analysis.duplicates;
     dc.totalCount =+ project.analysis.total;
-
     dc.dataTable.draw();
 };
 
@@ -308,12 +315,14 @@ dc.deduplicate = function(pid) {
         var project = dc.projects[pid];
         project.dedup = result;
         if (result === false) {
+            dc.hideWaitingModal();
             alert ("There was an error cleaning up project " + pid);
         } else {
+            dc.analysisQueue.push(pid);
             dc.analyzeProject(pid);
         }
     }).always( function() {
-        dc.hideWaitingModal();
+        // dc.hideWaitingModal();
     });
 };
 
