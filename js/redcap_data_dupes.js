@@ -122,6 +122,9 @@ dc.updateProgressBar = function(percent, text) {
 
 // Get all the projects in the system
 dc.getAllProjects = function() {
+
+    dc.dataTable.clear();
+
     $.ajax({
         method: "POST",
         url: dc.endpointUrl,
@@ -152,10 +155,57 @@ dc.analyzeProjects = function() {
     dc.showProgressBar();
     dc.projectCount = dc.projects.length - 1; //Object.keys(dc.allProjects).length;
     dc.projectIndex = 0;
-    dc.duplicateCount = 0;
-    dc.recordCount = 0;
-    for (var key in dc.projects) dc.analyzeProject(key);
+
+    // for (var key in dc.projects) dc.analyzeProject(key);
+    dc.analysisQueue = [];
+    for (var key in dc.projects) {
+        if (key != "") dc.analysisQueue.push(key);
+    }
+    // console.log(dc.analysisQueue);
+    // console.log(dc.analysisQueue.shift());
+    // console.log(dc.analysisQueue);
+
+    dc.analyzeProject2();
 };
+
+dc.analyzeProject2 = function() {
+    if (dc.analysisQueue.length == 0) {
+        console.log("Done");
+        return true;
+    }
+
+    var pid = dc.analysisQueue.shift();
+
+    $.ajax({
+        method: "POST",
+        url: dc.endpointUrl,
+        dataType: 'json',
+        data: { action: "analyze-project", project_id: pid},
+    }).done( function(result) {
+        console.log(pid, result);
+        var project = dc.projects[pid];
+        project.analysis = result;
+        // dc.projects[pid] = result;
+        dc.addRow(project)
+    }).always( function() {
+        dc.projectIndex++;
+        var percent = Math.round( dc.projectIndex / dc.projectCount * 100, 0);
+        dc.updateProgressBar(percent, percent + "% (" + dc.projectIndex + "/" + dc.projectCount + ")");
+
+        if (dc.analysisQueue.length === 0) {
+            dc.hideWaitingModal();
+            dc.hideProgressBar();
+            dc.dataTable.draw();
+            dc.showDataTable();
+            dc.updateSummary();
+        } else {
+            // Get next queue member
+            dc.analyzeProject2()
+        }
+    });
+};
+
+
 
 dc.analyzeProject = function(pid) {
     $.ajax({
@@ -192,15 +242,16 @@ dc.updateSummary = function() {
 
     console.log(total,unique,duplicates,duration);
 
+    $('div.table-summary').remove();
     var ts = $('<div class="table-summary"/>')
         .prepend("<span class='badge badge-secondary'>" + Number.parseFloat(duration/1000).toPrecision(3) + " sec DB Query Time</span>")
         .prepend("<span class='badge badge-danger'>" + duplicates + " Duplicates</span>")
         .prepend("<span class='badge badge-primary'>" + unique + " Unique Rows</span>")
         .prepend("<span class='badge badge-secondary'>" + total + " Total Rows</span>")
+        .prepend("<hr>");
 
     $('.dataTable-container')
-        .prepend(ts)
-        .prepend("<hr>");
+        .prepend(ts);
 };
 
 dc.addRow = function(project) {
