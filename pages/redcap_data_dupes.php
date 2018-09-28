@@ -57,12 +57,11 @@ if (!SUPER_USER) {
                         <li>The scanning process was throttled to a single thread to reduce the impact on your database.  This means it may take
                             a long time to scan your entire redcap_data table, but other users' should be able to continue using the system with
                             an acceptable impact to performance.</li>
-
                     </ul>
                 </div>
             </div>
         </div>
-        <div>
+        <div class="step1">
             <p>
                 <b>Step 1:</b> Scan your REDCap data table for projects with repeat rows.  This could take a while...
             </p>
@@ -71,10 +70,8 @@ if (!SUPER_USER) {
             </p>
         </div>
 
-        <div>
-            <div class="progress hidden">
-                <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 25%;" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">25%</div>
-            </div>
+        <div class="progress hidden" style="height: 30px;">
+            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 25%; height: 100%;" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">25%</div>
         </div>
 
         <div class="dataTable-container hidden">
@@ -87,7 +84,7 @@ if (!SUPER_USER) {
                         <th>Total Rows</th>
                         <th>Unique Rows</th>
                         <th>Duplicates</th>
-                        <th>Query(ms)</th>
+                        <th>Query (ms)</th>
                         <th>Action</th>
                     </tr>
                 </thead>
@@ -99,7 +96,8 @@ if (!SUPER_USER) {
     </div>
 </main>
 
-<div class="modal waiting-modal fade load-spinner" data-backdrop="static" data-keyboard="false" tabindex="-1">
+
+<div id="spinnerModal" class="modal waiting-modal fade load-spinner" data-backdrop="static" data-keyboard="false" tabindex="-1">
     <div class="modal-dialog modal-sm">
         <div class="modal-content" style="width: 48px">
             <span class="fa fa-spinner fa-spin fa-3x"></span>
@@ -108,17 +106,55 @@ if (!SUPER_USER) {
 </div>
 
 
+<div id="progressModal" class="modal fade" data-backdrop="static" role="dialog" data-keyboard="false" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Please Wait</h4>
+            </div>
+            <div class="modal-body center-block">
+                <div class="progress" style="height:30px;">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width:25%; height:100%;">25%</div>
+                </div>
+            </div>
+<!--            <div class="modal-footer">-->
+<!--                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>-->
+<!--            </div>-->
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+
 <style>
     /*#project_select { width: 100%; }*/
 
     /*Clean up bootstrap formatting for datatables*/
     table.dataTable thead .sorting_asc, table.dataTable thead .sorting_desc, table.dataTable thead .sorting {background-image: none;}
 
+
+    #pagecontainer { max-width: inherit; }
+
+    #projects-table td {
+        /*font-size: 80%;*/
+    }
+
+    .progress {
+        font-size: 1.0rem;
+    }
+
+    .alert {
+        border-color: transparent !important;
+    }
+
     .load-spinner .modal-dialog{
         display: table;
         position: relative;
         margin: 0 auto;
         top: calc(33% - 24px);
+    }
+
+    .fa-3x {
+        font-size: 4em;
     }
 
     .load-spinner .modal-dialog .modal-content{

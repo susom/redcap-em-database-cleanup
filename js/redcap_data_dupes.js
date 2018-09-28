@@ -61,8 +61,6 @@ dc.buttonPress = function() {
     var action = $(this).data('action');
 
     if (action === "scan-projects") {
-        dc.showWaitingModal();
-        dc.hideDataTable();
         var projects = dc.getAllProjects();
     }
     else if (action === "dedup") {
@@ -95,12 +93,12 @@ dc.hideWaitingModal = function() {
     $('.waiting-modal').modal('hide');
 };
 
-dc.showProgressBar = function() {
-    $('.progress').show();
+dc.showProgressModal = function() {
+    $('#progressModal').modal('show');
 };
 
-dc.hideProgressBar = function() {
-    $('.progress').hide();
+dc.hideProgressModal = function() {
+    $('#progressModal').modal('hide');
 };
 
 dc.showDataTable = function() {
@@ -122,7 +120,7 @@ dc.updateProgressBar = function(percent, text) {
 
 // Get all the projects in the system
 dc.getAllProjects = function() {
-
+    dc.hideDataTable();
     dc.dataTable.clear();
 
     $.ajax({
@@ -137,26 +135,27 @@ dc.getAllProjects = function() {
             if (result.hasOwnProperty(key) && ! isNaN(key)) {
                 var pid = key;
                 var title = result[key];
-                console.log(pid + " -> " + title);
+                // console.log(pid + " -> " + title);
                 dc.projects[pid] = {
                     pid: pid,
                     title: title
                 };
             }
         }
-        dc.analyzeProjects();
+        dc.processAnalysisQueue();
     }).always( function() {
         //dc.hideWaitingModal();
     });
 };
 
-dc.analyzeProjects = function() {
+
+
+dc.processAnalysisQueue = function() {
+    dc.scanStart = new Date();
 
     dc.updateProgressBar(0);
-    dc.showProgressBar();
-    dc.projectCount = dc.projects.length - 1; //Object.keys(dc.allProjects).length;
-    dc.projectIndex = 0;
-    dc.scanStart = new Date();
+    dc.showProgressModal();
+    // dc.projectCount = dc.projects.length - 1; //Object.keys(dc.allProjects).length;
 
     // for (var key in dc.projects) dc.analyzeProject(key);
     dc.analysisQueue = [];
@@ -164,13 +163,16 @@ dc.analyzeProjects = function() {
         if (key != "") dc.analysisQueue.push(key);
     }
 
+    dc.projectCount=dc.analysisQueue.length;
+    dc.projectIndex = 0;
+
     dc.analyzeProject();
 };
 
 
 dc.analyzeProject = function() {
-    if (dc.analysisQueue.length == 0) {
-        console.log("Done");
+    if (dc.analysisQueue.length === 0) {
+        console.log("Queue Empty");
         return true;
     }
 
@@ -183,18 +185,23 @@ dc.analyzeProject = function() {
         data: { action: "analyze-project", project_id: pid},
     }).done( function(result) {
         console.log(pid, result);
+
+        // Save result to project
         var project = dc.projects[pid];
         project.analysis = result;
-        // dc.projects[pid] = result;
+
+        // Add row to table
         dc.addRow(project)
     }).always( function() {
         dc.projectIndex++;
-        var percent = Math.round( dc.projectIndex / dc.projectCount * 100, 0);
+        var percent = Math.round(( ((dc.projectCount - dc.analysisQueue.length) / dc.projectCount)) * 100, 0);
+        // var percent = Math.round( dc.projectIndex / dc.projectCount * 100, 0);
+
         dc.updateProgressBar(percent, percent + "% (" + dc.projectIndex + "/" + dc.projectCount + ")");
 
         if (dc.analysisQueue.length === 0) {
             dc.hideWaitingModal();
-            dc.hideProgressBar();
+            dc.hideProgressModal();
             dc.dataTable.draw();
             dc.showDataTable();
             dc.updateSummary();
@@ -205,33 +212,6 @@ dc.analyzeProject = function() {
     });
 };
 
-
-
-// dc.analyzeProject = function(pid) {
-//     $.ajax({
-//         method: "POST",
-//         url: dc.endpointUrl,
-//         dataType: 'json',
-//         data: { action: "analyze-project", project_id: pid},
-//     }).done( function(result) {
-//         console.log(pid, result);
-//         var project = dc.projects[pid];
-//         project.analysis = result;
-//         // dc.projects[pid] = result;
-//         dc.addRow(project)
-//     }).always( function() {
-//         dc.projectIndex++;
-//         var percent = Math.round( dc.projectIndex / dc.projectCount * 100, 0);
-//         dc.updateProgressBar(percent, percent + "% (" + dc.projectIndex + "/" + dc.projectCount + ")");
-//         if (percent == 100) {
-//             dc.hideWaitingModal();
-//             dc.hideProgressBar();
-//             dc.dataTable.draw();
-//             dc.showDataTable();
-//             dc.updateSummary();
-//         }
-//     });
-// };
 
 dc.formatNumberWithCommas = function(x) {
     var parts = x.toString().split(".");
@@ -246,22 +226,32 @@ dc.updateSummary = function() {
     var db_time = dc.dataTable.columns(5).data().sum();
     var duration = (new Date - dc.scanStart) / 1000;
 
+    var project_count = dc.dataTable.data().length;
+
     console.log(total,unique,duplicates,duration);
 
     $('div.table-summary').remove();
     var ts = $('<div class="table-summary"/>')
         .prepend("<span class='badge badge-secondary'>" + dc.formatNumberWithCommas(+(duration/60).toFixed(1)) + "min</span>")
-        .prepend("<span class='badge badge-secondary'>" + Number.parseFloat(db_time/1000).toPrecision(3) + "sec</span>")
-        // .prepend("<span class='badge badge-primary'>" + dc.formatNumberWithCommas(unique) + " Unique Rows</span>")
         .prepend("<span class='badge badge-info'>" + dc.formatNumberWithCommas(total) + " Rows</span>")
         .prepend("<span class='badge badge-success'>" + dc.formatNumberWithCommas(dc.projectIndex) + " Projects</span>")
         .prepend("<span class='badge badge-danger'>" + dc.formatNumberWithCommas(duplicates) + " Duplicates Found</span>")
+        .prepend("<span class='badge badge-dark'>" + dc.formatNumberWithCommas(project_count) + " Projects</span>")
         .prepend("<hr>");
 
     $('.dataTable-container')
         .prepend(ts);
 };
 
+
+dc.addAlert = function (msg, alertType) {
+    alertType = alertType || "alert-danger";
+
+    $('<div id="update-alert" class="alert ' + alertType + ' alert-dismissible fade show">')
+        .html(msg)
+        .prepend('<button type="button" class="close" data-dismiss="alert">&times;</button>')
+        .insertAfter('div.step1');
+};
 
 dc.addRow = function(project) {
 
@@ -305,6 +295,8 @@ dc.addRow = function(project) {
 
 dc.deduplicate = function(pid) {
     dc.showWaitingModal();
+    dc.dedupStart = new Date();
+
     $.ajax({
         method: "POST",
         url: dc.endpointUrl,
@@ -318,6 +310,8 @@ dc.deduplicate = function(pid) {
             dc.hideWaitingModal();
             alert ("There was an error cleaning up project " + pid);
         } else {
+            var duration = +((new Date() - dc.dedupStart) / 1000).toFixed(1);
+            dc.addAlert("<strong>Success</strong> Project " + pid + " has been deduplicated in " + duration + " seconds", "alert-success");
             dc.analysisQueue.push(pid);
             dc.analyzeProject(pid);
         }
