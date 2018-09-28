@@ -1,0 +1,39 @@
+{
+  "name": "Database Cleanup",
+
+  "namespace":"Stanford\\DatabaseCleanup",
+
+  "description": "A module for cleaning up the REDCap database",
+
+  "authors": [
+    {
+      "name": "Andy Martin",
+      "email": "andy123@stanford.edu",
+      "institution": "Stanford University"
+    }
+  ],
+
+  "links": {
+    "control-center": [
+      {
+        "name": "Database Cleanup",
+        "icon": "gear",
+        "url": "menu.php"
+      }
+    ],
+    "project": [
+    ]
+  },
+
+  "system-settings": [
+    {
+      "key": "enable-system-debug-logging",
+      "name": "<b>Enable Debug Logging (system-wide)</b>",
+      "required": false,
+      "type": "checkbox"
+    }
+  ],
+
+  "project-settings": [
+  ]
+}
