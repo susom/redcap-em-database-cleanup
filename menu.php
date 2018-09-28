@@ -60,33 +60,6 @@ if (!SUPER_USER) {
 
 <script type="application/javascript">
 
-    //$('#form0 .btn').bind('click', function() {
-    //    var action = $(this).data('action');
-    //    console.log(action);
-    //
-    //    // Get the project_id
-    //    var project_id = $('#project_select').val();
-    //    if (project_id == '') {
-    //        alert ('You must select a valid project option');
-    //        return false;
-    //    }
-    //
-    //
-    //    // Analyze
-    //    if (action === "analyze") {
-    //        $.ajax({
-    //            method: "POST",
-    //            url: '<?php //echo $module->getUrl("pages/ajax.php") ?>//',
-    //            dataType: 'json',
-    //            data: { action: action, project_id: project_id },
-    //        }).done( function(result) {
-    //            console.log(result);
-    //        });
-    //    }
-    //
-    //
-    //});
-    //
     //$(document).ready( function() {
     //    // Set up the Select2 control
     //    $('#project_select').select2({

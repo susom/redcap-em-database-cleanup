@@ -14,7 +14,6 @@ if (!SUPER_USER) {
 }
 
 
-// LOAD SELECT 2
 ?>
 
 <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
@@ -32,11 +31,8 @@ if (!SUPER_USER) {
 <script src="<?php echo $module->getUrl("js/redcap_data_dupes.js") ?>"></script>
 
 <script>
-    // var dc = dc || {};
     dc.endpointUrl = '<?php echo $module->getUrl("pages/ajax.php") ?>';
 </script>
-
-
 
 <main role="main" class="container">
     <div class="redcap-data-dedupes">

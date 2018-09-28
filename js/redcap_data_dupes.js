@@ -1,3 +1,9 @@
+$(document).ready( function() {
+    dc.init();
+});
+
+
+
 // Data Cleanup javascript class
 var dc = dc || {};
 
@@ -149,7 +155,6 @@ dc.getAllProjects = function() {
 };
 
 
-
 dc.processAnalysisQueue = function() {
     dc.scanStart = new Date();
 
@@ -219,6 +224,7 @@ dc.formatNumberWithCommas = function(x) {
     return parts.join(".");
 };
 
+
 dc.updateSummary = function() {
     var total = dc.dataTable.columns(2).data().sum();
     var unique = dc.dataTable.columns(3).data().sum();
@@ -234,9 +240,8 @@ dc.updateSummary = function() {
     var ts = $('<div class="table-summary"/>')
         .prepend("<span class='badge badge-secondary'>" + dc.formatNumberWithCommas(+(duration/60).toFixed(1)) + "min</span>")
         .prepend("<span class='badge badge-info'>" + dc.formatNumberWithCommas(total) + " Rows</span>")
-        .prepend("<span class='badge badge-success'>" + dc.formatNumberWithCommas(dc.projectIndex) + " Projects</span>")
-        .prepend("<span class='badge badge-danger'>" + dc.formatNumberWithCommas(duplicates) + " Duplicates Found</span>")
         .prepend("<span class='badge badge-dark'>" + dc.formatNumberWithCommas(project_count) + " Projects</span>")
+        .prepend("<span class='badge badge-danger'>" + dc.formatNumberWithCommas(duplicates) + " Duplicates Found</span>")
         .prepend("<hr>");
 
     $('.dataTable-container')
@@ -252,6 +257,7 @@ dc.addAlert = function (msg, alertType) {
         .prepend('<button type="button" class="close" data-dismiss="alert">&times;</button>')
         .insertAfter('div.step1');
 };
+
 
 dc.addRow = function(project) {
 
@@ -320,76 +326,3 @@ dc.deduplicate = function(pid) {
     });
 };
 
-
-
-// // Go through and set up all the rows in the data-table
-// function updateDataTable() {
-//     // Clear the current table
-//     var table = $('#projects-table').DataTable();
-//     // table
-//     //     .clear();
-//
-//     // Get the selected project
-//     var selected = $('#project_select').select2('data');
-//
-//     console.log(selected);
-//
-//     var project_id = selected[0].id;
-//     var project_text = selected[0].text;
-//     console.log("On project " + project_id, project_text);
-//
-//
-//
-//
-//     table.row.add([project_id, project_text, null,null,null,null]).draw(true);
-//
-//     // analyzeProject(project_id);
-//
-// }
-
-
-// function analyzeProject(project_id) {
-//     $.ajax({
-//         method: "POST",
-//         url: '<?php echo $module->getUrl("pages/ajax.php") ?>',
-//         dataType: 'json',
-//         data: { action: "analyze", project_id: project_id },
-//     }).done( function(result) {
-//         console.log(result);
-//         // var table = $('#projects-table').DataTable();
-//         // table.row.add(result.project_id, result.)
-//
-//
-//     });
-// }
-//
-// $('div.actions .btn').bind('click', function() {
-//     var action = $(this).data('action');
-//     console.log(action);
-//
-//     // Get the project_id
-//     var project_id = $('#project_select').val();
-//     if (project_id == '') {
-//         alert ('You must select a valid project option');
-//         return false;
-//     }
-//
-//
-//     // Analyze
-//     if (action === "analyze") {
-//         $.ajax({
-//             method: "POST",
-//             url: '<?php echo $module->getUrl("pages/ajax.php") ?>',
-//             dataType: 'json',
-//             data: { action: action, project_id: project_id },
-//         }).done( function(result) {
-//             console.log(result);
-//         });
-//     }
-//
-//
-// });
-
-$(document).ready( function() {
-    dc.init();
-});

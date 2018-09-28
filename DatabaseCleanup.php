@@ -1,11 +1,11 @@
 <?php
 namespace Stanford\DatabaseCleanup;
 
-require_once "emLoggerTrait.php";
+//require_once "emLoggerTrait.php";
 
 class DatabaseCleanup extends \ExternalModules\AbstractExternalModule
 {
-    use emLoggerTrait;
+    //use emLoggerTrait;
 
     public function getDuplicateCounts($project_id) {
         $start_ts = microtime(true);
@@ -105,10 +105,7 @@ class DatabaseCleanup extends \ExternalModules\AbstractExternalModule
 
 
     public function doSql($sql) {
-        \Plugin::log($sql, "DEBUG", "SQL");
         $q = db_query($sql);
-        \Plugin::log($q, "DEBUG", "Query");
-        \Plugin::log(db_num_rows($q), "DEBUG", "Num Rows");
         return $q;
     }
 
