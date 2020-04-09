@@ -134,6 +134,9 @@ dc.getAllProjects = function() {
     dc.hideDataTable();
     dc.dataTable.clear();
 
+    dc.startProject = parseInt($('input[name="start-project"]').val(), 10);
+    dc.endProject   = parseInt($('input[name="end-project"]').val(), 10);
+
     $.ajax({
         method: "POST",
         url: dc.endpointUrl,
@@ -142,10 +145,15 @@ dc.getAllProjects = function() {
     }).done( function(result) {
         // Result is a single object - let's break it down into an array
         dc.projects = [];
-        for (var key in result) {
+
+        for (let key in result) {
             if (result.hasOwnProperty(key) && ! isNaN(key)) {
-                var pid = key;
-                var title = result[key];
+                let pid = key;
+
+                if(!isNaN(dc.startProject) && parseInt(pid,10) < dc.startProject) continue;
+                if(!isNaN(dc.endProject)   && parseInt(pid,10) > dc.endProject)   continue;
+
+                let title = result[key];
                 // console.log(pid + " -> " + title);
                 dc.projects[pid] = {
                     pid: pid,
@@ -264,14 +272,15 @@ dc.addAlert = function (msg, alertType) {
 
 
 dc.addRow = function(project) {
+    console.log(project);
 
-    var action = "";
+    let action = "";
     if(project.analysis.collisions > 0) {
-        action =+ "<button class='btn btn-xs btn-primary' data-action='viewDetails' data-pid='" + project.pid + "'>Details</button>";
+        action += "<button class='btn btn-xs btn-primary' data-action='viewDetails' data-pid='" + project.pid + "'>Details</button>";
     }
-    if(project.analysis.cache) {
-        action =+ "<button class='btn btn-xs btn-primary' data-action='clearCache' data-pid='" + project.pid + "'>Clear Cache</button>";
-    }
+
+    let cacheBtn = "<button class='ml-2 btn btn-xs btn-danger' data-action='clear-cache' data-pid='" + project.pid + "'>Clear</button>";
+
 
 
     // else if (project.dedup === true) {
@@ -296,7 +305,7 @@ dc.addRow = function(project) {
             project.analysis.collisions,
             project.analysis.records,
             project.analysis.duration,
-            project.analysis.cache,
+            project.analysis.cache + cacheBtn,
             action
         ]
     );
@@ -318,17 +327,21 @@ dc.clearCache = function(pid) {
         dataType: 'json',
         data: { action: "clear-cache", project_id: pid},
     }).done( function(result) {
-        console.log(pid, result);
-        // var project = dc.projects[pid];
-        // project.dedup = result;
         if (result === false) {
             dc.hideWaitingModal();
             alert ("There was an error clearing the cache for project: " + pid);
         } else {
-            var duration = +((new Date() - dc.actionStart) / 1000).toFixed(1);
-            dc.addAlert("<strong>Success</strong> Project " + pid + " cache has been cleared in " + duration + " seconds", "alert-success");
-            dc.analysisQueue.push(pid);
-            dc.analyzeProject(pid);
+            let duration = +((new Date() - dc.actionStart) / 1000).toFixed(1);
+            if (pid) {
+                // We are doing just one project - let's re-scan that project
+                dc.addAlert("<strong>Success</strong> Project " + pid + "'s cache was cleared in " + duration + " seconds.  Reanalyzing...", "alert-success");
+                dc.analysisQueue.push(pid);
+                dc.analyzeProject(pid);
+            } else {
+                // We cleared all projects
+                dc.addAlert("<strong>Success</strong> All project caches were cleared in " + duration + " seconds.  Select projects to re-analyze.", "alert-success");
+                dc.hideWaitingModal();
+            }
         }
     }).always( function() {
         // dc.hideWaitingModal();
@@ -337,31 +350,30 @@ dc.clearCache = function(pid) {
 
 
 
-
-dc.deduplicate = function(pid) {
-    dc.showWaitingModal();
-    dc.dedupStart = new Date();
-
-    $.ajax({
-        method: "POST",
-        url: dc.endpointUrl,
-        dataType: 'json',
-        data: { action: "dedup-project", project_id: pid},
-    }).done( function(result) {
-        console.log(pid, result);
-        var project = dc.projects[pid];
-        project.dedup = result;
-        if (result === false) {
-            dc.hideWaitingModal();
-            alert ("There was an error cleaning up project " + pid);
-        } else {
-            var duration = +((new Date() - dc.dedupStart) / 1000).toFixed(1);
-            dc.addAlert("<strong>Success</strong> Project " + pid + " has been deduplicated in " + duration + " seconds", "alert-success");
-            dc.analysisQueue.push(pid);
-            dc.analyzeProject(pid);
-        }
-    }).always( function() {
-        // dc.hideWaitingModal();
-    });
-};
+// dc.deduplicate = function(pid) {
+//     dc.showWaitingModal();
+//     dc.dedupStart = new Date();
+//
+//     $.ajax({
+//         method: "POST",
+//         url: dc.endpointUrl,
+//         dataType: 'json',
+//         data: { action: "dedup-project", project_id: pid},
+//     }).done( function(result) {
+//         console.log(pid, result);
+//         var project = dc.projects[pid];
+//         project.dedup = result;
+//         if (result === false) {
+//             dc.hideWaitingModal();
+//             alert ("There was an error cleaning up project " + pid);
+//         } else {
+//             var duration = +((new Date() - dc.dedupStart) / 1000).toFixed(1);
+//             dc.addAlert("<strong>Success</strong> Project " + pid + " has been deduplicated in " + duration + " seconds", "alert-success");
+//             dc.analysisQueue.push(pid);
+//             dc.analyzeProject(pid);
+//         }
+//     }).always( function() {
+//         // dc.hideWaitingModal();
+//     });
+// };
 

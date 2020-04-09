@@ -63,8 +63,13 @@ if (!SUPER_USER) {
                 <b>Step 1:</b> Scan your REDCap data table for projects with evidence of collisions (e.g. simultaneous
                 saves for the same record within 2 seconds of each other).  This could take a while...
             </p>
-            <p>
+            <div class="input-group input-group-sm mb-3">
+                <input class="mr-4 form-control" name="start-project" placeholder="Start PID (optional)"/>
+                <input class="mr-4 form-control" name="end-project" placeholder="End PID (optional)"/>
                 <button class="btn btn-primaryrc btn-sm" data-action="scan-projects">Scan All Projects</button>
+            </div>
+            <p>
+                <button class="btn btn-primaryrc btn-sm" data-action="clear-cache">Clear Cache For All Records</button>
             </p>
         </div>
 
