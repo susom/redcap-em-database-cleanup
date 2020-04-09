@@ -44,16 +44,24 @@ if (!SUPER_USER) {
                     </p>
                     <ul>
                         <li>Having a backup is a REALLY good idea - this tool offers sufficient rope to hang yourself!</li>
-                        <li>The scanning process was throttled to a single thread to reduce the impact on your database.  This means it may take
-                            a long time to scan your entire redcap_data table, but other users' should be able to continue using the system with
-                            an acceptable impact to performance.</li>
+                        <li>The scanning process was throttled to a single thread to reduce the impact on your database.
+                            This means it may take a long time to scan your entire redcap_data table, but other users
+                            should be able to continue using the system with an acceptable impact to performance.</li>
+                        <li>The scan stores a cache of the result in the external module settings table.  So, if you do
+                            not finish in one session, you can restart and it will quickly catch up to where you left
+                            off using the cached values.</li>
+                        <li>
+                            You might want to enable your browser 'debugger tools' and follow the console to see how the
+                            process is going before hitting the 'Scan All Projects' button.
+                        </li>
                     </ul>
                 </div>
             </div>
         </div>
         <div class="step1">
             <p>
-                <b>Step 1:</b> Scan your REDCap data table for projects with repeat rows.  This could take a while...
+                <b>Step 1:</b> Scan your REDCap data table for projects with evidence of collisions (e.g. simultaneous
+                saves for the same record within 2 seconds of each other).  This could take a while...
             </p>
             <p>
                 <button class="btn btn-primaryrc btn-sm" data-action="scan-projects">Scan All Projects</button>
@@ -74,6 +82,7 @@ if (!SUPER_USER) {
                         <th># Collisions</th>
                         <th># Records</th>
                         <th>Query (ms)</th>
+                        <th>Cached</th>
                         <th>Action</th>
                     </tr>
                 </thead>

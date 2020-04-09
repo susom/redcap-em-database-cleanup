@@ -36,8 +36,8 @@ dc.init = function() {
     });
 
     $('.dataTables_length')
-        .append("<button id='collision-filter-on' class='left-20 btn btn-xs btn-success' data-action='dupes-filter-on'>Show Collisions Only</button>")
-        .append("<button id='collision-filter-off' class='left-20 btn btn-xs btn-primary hidden' data-action='dupes-filter-off'>Show All Projects</button>");
+        .append("<button id='collision-filter-on' class='left-20 btn btn-xs btn-success' data-action='collision-filter-on'>Show Collisions Only</button>")
+        .append("<button id='collision-filter-off' class='left-20 btn btn-xs btn-primary hidden' data-action='collision-filter-off'>Show All Projects</button>");
 
 
     // // Set up the Select2 control
@@ -69,6 +69,10 @@ dc.buttonPress = function() {
     if (action === "scan-projects") {
         var projects = dc.getAllProjects();
     }
+    else if (action === 'clear-cache') {
+        pid = $(this).data('pid');
+        dc.clearCache(pid);
+    }
     // else if (action === "detail") {
     //     // Show Details
     //     pid = $(this).data('pid');
@@ -77,14 +81,14 @@ dc.buttonPress = function() {
     else if (action === "collision-filter-on") {
         regExSearch = '[^0]+';
         dc.dataTable.column(3).search(regExSearch, true, false).draw();
-        $('#dupes-filter-off').show();
-        $('#dupes-filter-on').hide();
+        $('#collision-filter-off').show();
+        $('#collision-filter-on').hide();
     }
     else if (action === "collision-filter-off") {
         regExSearch = '';
         dc.dataTable.column(3).search(regExSearch, true, false).draw();
-        $('#dupes-filter-off').hide();
-        $('#dupes-filter-on').show();
+        $('#collision-filter-off').hide();
+        $('#collision-filter-on').show();
     }
     else {
         console.log(this, 'unregistered buttonPress', action);
@@ -263,8 +267,13 @@ dc.addRow = function(project) {
 
     var action = "";
     if(project.analysis.collisions > 0) {
-        action = "<button class='btn btn-xs btn-primary' data-action='viewDetails' data-pid='" + project.pid + "'>View Details</button>";
+        action =+ "<button class='btn btn-xs btn-primary' data-action='viewDetails' data-pid='" + project.pid + "'>Details</button>";
     }
+    if(project.analysis.cache) {
+        action =+ "<button class='btn btn-xs btn-primary' data-action='clearCache' data-pid='" + project.pid + "'>Clear Cache</button>";
+    }
+
+
     // else if (project.dedup === true) {
     //     action = "<i class='fas fa-check-circle'></i> Cleaned";
     // }
@@ -282,11 +291,12 @@ dc.addRow = function(project) {
 
     dc.dataTable.row.add(
         [
-            project.pid,
+            "<a href='" + app_path_webroot + "?pid=" + project.pid + "' target='_BLANK'>" + project.pid + "</a>",
             project.title,
             project.analysis.collisions,
             project.analysis.records,
             project.analysis.duration,
+            project.analysis.cache,
             action
         ]
     );
@@ -295,6 +305,37 @@ dc.addRow = function(project) {
     dc.recordCount    =+ project.analysis.records;
     dc.dataTable.draw();
 };
+
+
+
+dc.clearCache = function(pid) {
+    dc.showWaitingModal();
+    dc.actionStart = new Date();
+
+    $.ajax({
+        method: "POST",
+        url: dc.endpointUrl,
+        dataType: 'json',
+        data: { action: "clear-cache", project_id: pid},
+    }).done( function(result) {
+        console.log(pid, result);
+        // var project = dc.projects[pid];
+        // project.dedup = result;
+        if (result === false) {
+            dc.hideWaitingModal();
+            alert ("There was an error clearing the cache for project: " + pid);
+        } else {
+            var duration = +((new Date() - dc.actionStart) / 1000).toFixed(1);
+            dc.addAlert("<strong>Success</strong> Project " + pid + " cache has been cleared in " + duration + " seconds", "alert-success");
+            dc.analysisQueue.push(pid);
+            dc.analyzeProject(pid);
+        }
+    }).always( function() {
+        // dc.hideWaitingModal();
+    });
+};
+
+
 
 
 dc.deduplicate = function(pid) {

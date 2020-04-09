@@ -45,6 +45,37 @@ class RecordCollisions
     }
 
 
+    /**
+     * Clear the cache for the project
+     * @param null $project_id
+     * @return bool|int
+     */
+    public function clearCache($project_id = null) {
+        $this->module->PREFIX;
+
+        $pid = empty($project_id) ? "" : intval($project_id);
+
+        $sql = "delete rems.* from
+                redcap_external_module_settings rems
+                join redcap_external_modules rem on rem.external_module_id = rems.external_module_id
+            where
+                rem.directory_prefix = '" . $this->module->PREFIX . "' and rems.key like 'collision_summary_" . $pid . "%'";
+
+        $this->module->emDebug("clearing Cache", $sql);
+
+        $q = db_query($sql);
+
+        if(!$q) {
+            $this->module->emError("Error clearing cache", $q);
+            $result = false;
+        } else {
+            $result = db_affected_rows();
+            $this->module->emDebug("Cleared cache, $result cleared");
+        }
+
+        return $result;
+    }
+
 
     public function getProjectCollisionSummary($project_id) {
 
@@ -60,12 +91,12 @@ class RecordCollisions
                 $this->module->emDebug("Returning from cache: ", $result);
 
                 // Set duration to 0 to indicate cache
-                $result['duration'] = "0";
+                $result['cache'] = 1;
                 return $result;
             }
         }
 
-
+        // Analyze the project
         $start_ts = microtime(true);
         $project_id = intval($project_id);
 
@@ -84,10 +115,11 @@ class RecordCollisions
                     and l.event_id IS NOT NULL
                 inner join %s m on
                     l.pk = m.pk
-                    and l.log_event_id != m.log_event_id
                     and l.event = m.event
                     and l.event_id = m.event_id
                     and l.project_id = m.project_id
+                    and l.log_event_id != m.log_event_id
+                    and l.data_values != m.data_values
                     and abs(l.ts - m.ts) < 3
             where
                 p.project_id = %d
@@ -122,6 +154,8 @@ class RecordCollisions
 
         $this->module->setSystemSetting($result_key, $result);
         $this->module->setSystemSetting($date_key, date('Y-m-d H:i:s'));
+
+        $result['cache'] = 0;
 
         return $result;
     }

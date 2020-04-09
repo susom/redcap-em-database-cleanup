@@ -51,7 +51,7 @@ if (!SUPER_USER) {
                     <ul>
                         <li>Having a backup is a REALLY good idea - this tool offers sufficient rope to hang yourself!</li>
                         <li>The scanning process was throttled to a single thread to reduce the impact on your database.  This means it may take
-                            a long time to scan your entire redcap_data table, but other users' should be able to continue using the system with
+                            a long time to scan your entire redcap_data table, but other users should be able to continue using the system with
                             an acceptable impact to performance.</li>
                     </ul>
                 </div>

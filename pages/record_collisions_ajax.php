@@ -63,6 +63,12 @@ if (isset($_POST['action'])) {
         // $result = $module->getAllProjects();
     }
 
+    if ($action == "clear-cache") {
+        $result = $rc->clearCache($project_id);
+        // $result = $module->getAllProjects();
+    }
+
+
     // if ($action == "dedup-project") {
     //     $result = $module->deduplicateProject($project_id);
     // }
