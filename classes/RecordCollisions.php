@@ -33,7 +33,8 @@ class RecordCollisions
      */
     public function getAllProjects($query = null) {
         $projects = array();
-        $sql = "select p.project_id, p.app_title from redcap_projects p join debug_survey_dup_potential dsdp on p.project_id = dsdp.project_id";
+        // $sql = "select p.project_id, p.app_title from redcap_projects p join debug_survey_dup_potential dsdp on p.project_id = dsdp.project_id";
+        $sql = "select project_id, app_title from redcap_projects";
         if (!empty($query)) $sql .= " WHERE project_id LIKE '%$query%' OR app_title LIKE '%$query%'";
         $q = db_query($sql);
         while ($row = db_fetch_assoc($q)) {
@@ -46,6 +47,24 @@ class RecordCollisions
 
 
     public function getProjectCollisionSummary($project_id) {
+
+        // See if we have a cache
+        $result_key = "collision_summary_" . $project_id;
+        $date_key = $result_key . "_date";
+
+        if ($result = $this->module->getSystemSetting($result_key)) {
+            // get the date
+            $date = $this->module->getSystemSetting($date_key);
+            // TODO: Have an expiration of the date
+            if (!empty($date)) {
+                $this->module->emDebug("Returning from cache: ", $result);
+
+                // Set duration to 0 to indicate cache
+                $result['duration'] = "0";
+                return $result;
+            }
+        }
+
 
         $start_ts = microtime(true);
         $project_id = intval($project_id);
@@ -100,6 +119,9 @@ class RecordCollisions
             "records"    => $records,
             "duration"   => round((microtime(true) - $start_ts) * 1000, 3)
         );
+
+        $this->module->setSystemSetting($result_key, $result);
+        $this->module->setSystemSetting($date_key, date('Y-m-d H:i:s'));
 
         return $result;
     }
