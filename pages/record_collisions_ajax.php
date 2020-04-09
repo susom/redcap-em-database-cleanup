@@ -59,7 +59,8 @@ if (isset($_POST['action'])) {
     }
 
     if ($action == "get-all-projects") {
-        $result = $module->getAllProjects();
+        $result = $rc->getAllProjects();
+        // $result = $module->getAllProjects();
     }
 
     // if ($action == "dedup-project") {

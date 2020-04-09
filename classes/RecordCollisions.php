@@ -25,6 +25,26 @@ class RecordCollisions
         $this->module = $module;
     }
 
+
+    /**
+     * Get all projects in the that are likely to be symptomatic
+     * @param null $query
+     * @return array
+     */
+    public function getAllProjects($query = null) {
+        $projects = array();
+        $sql = "select p.project_id, p.app_title from redcap_projects p join debug_survey_dup_potential dsdp on p.project_id = dsdp.project_id";
+        if (!empty($query)) $sql .= " WHERE project_id LIKE '%$query%' OR app_title LIKE '%$query%'";
+        $q = db_query($sql);
+        while ($row = db_fetch_assoc($q)) {
+            $pid = $row['project_id'];
+            $projects[$pid] = $row['app_title'];
+        }
+        return $projects;
+    }
+
+
+
     public function getProjectCollisionSummary($project_id) {
 
         $start_ts = microtime(true);
