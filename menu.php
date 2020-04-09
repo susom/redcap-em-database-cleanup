@@ -40,6 +40,9 @@ if (!SUPER_USER) {
                 <a class="btn btn-primaryrc btn-sm" href="<?php echo $module->getUrl("pages/redcap_data_dupes.php")?>">Remove Duplicate Records in REDCap Data</a>
             </div>
 
+            <div>
+                <a class="btn btn-primaryrc btn-sm" href="<?php echo $module->getUrl("pages/record_collisions.php")?>">Identify Record Collisions</a>
+            </div>
 
 <!--            <div class="input-group">-->
 <!--                <span class="input-group-addon" id="project_label">Select a project:</span>-->

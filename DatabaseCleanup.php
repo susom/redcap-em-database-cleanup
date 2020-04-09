@@ -1,12 +1,21 @@
 <?php
 namespace Stanford\DatabaseCleanup;
 
-//require_once "emLoggerTrait.php";
+require_once "emLoggerTrait.php";
+require_once "classes/RecordCollisions.php";
+require_once "classes/RedcapDataDuplicates.php";
 
 class DatabaseCleanup extends \ExternalModules\AbstractExternalModule
 {
-    //use emLoggerTrait;
+    use emLoggerTrait;
 
+
+    /**
+     * Find if there are duplicate entries in REDCap Data
+     * @param $project_id
+     * @return array
+     * TODO: Move to redcapdataduplicates class
+     */
     public function getDuplicateCounts($project_id) {
         $start_ts = microtime(true);
         $project_id = intval($project_id);
@@ -64,7 +73,13 @@ class DatabaseCleanup extends \ExternalModules\AbstractExternalModule
     }
 
 
-
+    /**
+     * Create a temp table, copy redcap_data to temp table, and return
+     * @param $pid
+     * @return array|bool|\mysqli_result
+     * TODO: Look at locking redcap_data for this project before doing this operation
+     * https://dev.mysql.com/doc/refman/8.0/en/innodb-locking.html
+     */
     public function deduplicateProject($pid) {
         if (empty($pid)) return array( "error" => "Missing project_id");
 

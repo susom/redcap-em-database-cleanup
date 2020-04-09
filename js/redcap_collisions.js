@@ -14,7 +14,7 @@ dc.init = function() {
 
     // Set up the datatable
     dc.dataTable = $('#projects-table').DataTable({
-        "order": [[ 4, "desc" ]],
+        "order": [[ 3, "desc" ]],
         // "columns": [
         //     { "width": "10%" },
         //     { "width": "40%" },
@@ -36,8 +36,8 @@ dc.init = function() {
     });
 
     $('.dataTables_length')
-        .append("<button id='dupes-filter-on' class='left-20 btn btn-xs btn-success' data-action='dupes-filter-on'>Show Dupes Only</button>")
-        .append("<button id='dupes-filter-off' class='left-20 btn btn-xs btn-primary hidden' data-action='dupes-filter-off'>Show All Projects</button>");
+        .append("<button id='collision-filter-on' class='left-20 btn btn-xs btn-success' data-action='dupes-filter-on'>Show Collisions Only</button>")
+        .append("<button id='collision-filter-off' class='left-20 btn btn-xs btn-primary hidden' data-action='dupes-filter-off'>Show All Projects</button>");
 
 
     // // Set up the Select2 control
@@ -69,19 +69,20 @@ dc.buttonPress = function() {
     if (action === "scan-projects") {
         var projects = dc.getAllProjects();
     }
-    else if (action === "dedup") {
-        pid = $(this).data('pid');
-        dc.deduplicate(pid);
-    }
-    else if (action === "dupes-filter-on") {
+    // else if (action === "detail") {
+    //     // Show Details
+    //     pid = $(this).data('pid');
+    //     dc.deduplicate(pid);
+    // }
+    else if (action === "collision-filter-on") {
         regExSearch = '[^0]+';
-        dc.dataTable.column(4).search(regExSearch, true, false).draw();
+        dc.dataTable.column(3).search(regExSearch, true, false).draw();
         $('#dupes-filter-off').show();
         $('#dupes-filter-on').hide();
     }
-    else if (action === "dupes-filter-off") {
+    else if (action === "collision-filter-off") {
         regExSearch = '';
-        dc.dataTable.column(4).search(regExSearch, true, false).draw();
+        dc.dataTable.column(3).search(regExSearch, true, false).draw();
         $('#dupes-filter-off').hide();
         $('#dupes-filter-on').show();
     }
@@ -226,22 +227,21 @@ dc.formatNumberWithCommas = function(x) {
 
 
 dc.updateSummary = function() {
-    var total = dc.dataTable.columns(2).data().sum();
-    var unique = dc.dataTable.columns(3).data().sum();
-    var duplicates = dc.dataTable.columns(4).data().sum();
-    var db_time = dc.dataTable.columns(5).data().sum();
-    var duration = (new Date - dc.scanStart) / 1000;
+    var collisions  = dc.dataTable.columns(2).data().sum();
+    var records     = dc.dataTable.columns(3).data().sum();
+    var db_time     = dc.dataTable.columns(4).data().sum();
+    var duration    = (new Date - dc.scanStart) / 1000;
 
     var project_count = dc.dataTable.data().length;
 
-    console.log(total,unique,duplicates,duration);
+    // console.log(total,unique,duplicates,duration);
 
     $('div.table-summary').remove();
     var ts = $('<div class="table-summary"/>')
         .prepend("<span class='badge badge-secondary'>" + dc.formatNumberWithCommas(+(duration/60).toFixed(1)) + "min</span>")
-        .prepend("<span class='badge badge-info'>" + dc.formatNumberWithCommas(total) + " Rows</span>")
+        .prepend("<span class='badge badge-info'>" + dc.formatNumberWithCommas(records) + " Records Affected</span>")
         .prepend("<span class='badge badge-dark'>" + dc.formatNumberWithCommas(project_count) + " Projects</span>")
-        .prepend("<span class='badge badge-danger'>" + dc.formatNumberWithCommas(duplicates) + " Duplicates Found</span>")
+        .prepend("<span class='badge badge-danger'>" + dc.formatNumberWithCommas(collisions) + " Possible Collisions Found</span>")
         .prepend("<hr>");
 
     $('.dataTable-container')
@@ -263,10 +263,11 @@ dc.addRow = function(project) {
 
     var action = "";
     if(project.analysis.collisions > 0) {
-        action = "<button class='btn btn-xs btn-primary' data-action='dedup' data-pid='" + project.pid + "'>Remove Duplicates</button>";
-    } else if (project.dedup === true) {
-        action = "<i class='fas fa-check-circle'></i> Cleaned";
+        action = "<button class='btn btn-xs btn-primary' data-action='viewDetails' data-pid='" + project.pid + "'>View Details</button>";
     }
+    // else if (project.dedup === true) {
+    //     action = "<i class='fas fa-check-circle'></i> Cleaned";
+    // }
 
     // Remove the row if it already exists
     var existingRow = $("#projects-table tr").filter(function() {
@@ -275,8 +276,6 @@ dc.addRow = function(project) {
 
     if (existingRow.length) {
         // Subtract from totals
-
-
         console.log ("Removing row " + project.pid);
         dc.dataTable.row(existingRow).remove();
     }
@@ -285,16 +284,15 @@ dc.addRow = function(project) {
         [
             project.pid,
             project.title,
-            project.analysis.total,
-            project.analysis.distinct,
-            project.analysis.duplicates,
+            project.analysis.collisions,
+            project.analysis.records,
             project.analysis.duration,
             action
         ]
     );
 
-    dc.duplicateCount =+ project.analysis.duplicates;
-    dc.totalCount =+ project.analysis.total;
+    dc.collisionCount =+ project.analysis.collisions;
+    dc.recordCount    =+ project.analysis.records;
     dc.dataTable.draw();
 };
 

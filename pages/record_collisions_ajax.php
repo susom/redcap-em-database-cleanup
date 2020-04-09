@@ -8,9 +8,12 @@ if (!SUPER_USER) {
     exit();
 }
 
-
+/**
+ * Get projects for select2 dropdown
+ */
 if (isset($_GET['_type']) && $_GET['_type'] == "query") {
     if (isset($_GET['getProjects'])) {
+
         // Get all projects
         $q = isset($_GET['q']) ? $_GET['q'] : null;
         $projects = $module->getAllProjectOptions($q);
@@ -20,15 +23,6 @@ if (isset($_GET['_type']) && $_GET['_type'] == "query") {
 
         // Return Results
         header("Content-type: application/json");
-        //echo json_encode(array(
-        //    "results" => array(
-        //        array(
-        //            "text" => "Projects",
-        //            "children" => $projects
-        //        )
-        //    )
-        //));
-        //
         echo json_encode(
             [
                 "results" => [
@@ -39,23 +33,28 @@ if (isset($_GET['_type']) && $_GET['_type'] == "query") {
                 ]
             ]
         );
-
     }
 }
 
 
+/**
+ * Handle POST Actions
+ */
 if (isset($_POST['action'])) {
     $action = $_POST['action'];
-    $project_id = isset($_POST['project_id']) ? $_POST['project_id'] : "";
+    $project_id = isset($_POST['project_id']) ? filter_var($_POST['project_id'], FILTER_SANITIZE_NUMBER_INT) : "";
 
+    // Default error
     $result = array("error" => "Invalid Action");
+
+    $rc = new RecordCollisions();
 
     if ($action == "analyze-project") {
         if (empty($project_id)) {
             $result = array( "error" => "Missing project id" );
         } else {
             // Get project
-            $result = $module->getDuplicateCounts($project_id);
+            $result = $rc->getProjectCollisionSummary($project_id);
         }
     }
 
@@ -63,12 +62,11 @@ if (isset($_POST['action'])) {
         $result = $module->getAllProjects();
     }
 
-    if ($action == "dedup-project") {
-        $result = $module->deduplicateProject($project_id);
-    }
+    // if ($action == "dedup-project") {
+    //     $result = $module->deduplicateProject($project_id);
+    // }
 
     echo json_encode($result);
-//    echo json_encode(array("action"=>$action, "project_id" => $project_id));
 }
 
 

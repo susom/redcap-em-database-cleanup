@@ -20,34 +20,28 @@ if (!SUPER_USER) {
 <link href="https://cdn.datatables.net/1.10.19/css/dataTables.bootstrap4.min.css" rel="stylesheet" />
 
 <script src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
-
 <script src="https://cdn.datatables.net/plug-ins/1.10.19/api/sum().js"></script>
-
-
-
 <script src="https://cdn.datatables.net/1.10.19/js/dataTables.bootstrap4.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
 
-<script src="<?php echo $module->getUrl("js/redcap_data_dupes.js") ?>"></script>
+<script src="<?php echo $module->getUrl("js/redcap_collisions.js") ?>"></script>
 
 <script>
-    dc.endpointUrl = '<?php echo $module->getUrl("pages/ajax.php") ?>';
+    dc.endpointUrl = '<?php echo $module->getUrl("pages/record_collisions_ajax.php") ?>';
 </script>
 
 <main role="main" class="container">
     <div class="redcap-data-dedupes">
-
 
         <div class="card">
             <div class="card-header">
                 <h4><?php echo $module->getModuleName() ?></h4>
             </div>
             <div class="card-body">
-                <h4>REDCap Data Duplicates</h4>
-
+                <h4>REDCap Record Collisions</h4>
                 <div>
-                    <p>This job scans redcap_data project-by-project to detect duplicate record entries.  Once found, you can 'repair' them and remove
-                    the duplicate entries.</p>
+                    <p>This job scans redcap_data project-by-project to detect record collisions where two different users might be saving data to the same record id.
+                    </p>
                     <ul>
                         <li>Having a backup is a REALLY good idea - this tool offers sufficient rope to hang yourself!</li>
                         <li>The scanning process was throttled to a single thread to reduce the impact on your database.  This means it may take
@@ -77,9 +71,8 @@ if (!SUPER_USER) {
                     <tr>
                         <th>PID</th>
                         <th>Title</th>
-                        <th>Total Rows</th>
-                        <th>Unique Rows</th>
-                        <th>Duplicates</th>
+                        <th># Collisions</th>
+                        <th># Records</th>
                         <th>Query (ms)</th>
                         <th>Action</th>
                     </tr>
