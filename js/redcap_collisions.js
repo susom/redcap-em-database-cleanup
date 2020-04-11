@@ -171,6 +171,8 @@ dc.scanProjects = function() {
 
 /**
  * This function starts the analysis Queue
+ * It then calls analyzeProject which has a callback to analyzeProjectResults
+ * This handles the ajax results and then repeats until the queue is empty.
  */
 dc.processAnalysisQueue = function() {
 
@@ -234,7 +236,6 @@ dc.clearCache = function(pid) {
 
     dc.ajax(data, dc.clearCacheResult);
 };
-
 dc.clearCacheResult = function(result) {
     if (result === false) {
         dc.hideWaitingModal();
@@ -265,7 +266,7 @@ dc.viewDetails = function(pid) {
 dc.viewDetailsResult = function(results) {
     dc.hideWaitingModal();
     console.log("viewDetailsResult", results);
-    dc.addAlert("<b>Execute the following SQL on your server:</b><pre>" + results + "</pre>",'alert-success');
+    dc.addAlert("<b>Execute the following SQL on your server and compare the data values columns:</b><pre class='sql'>" + results + "</pre>",'alert-success');
 };
 
 
@@ -393,22 +394,35 @@ dc.formatNumberWithCommas = function(x) {
 
 
 dc.updateSummary = function() {
-    var collisions  = dc.dataTable.columns(2).data().sum();
-    var records     = dc.dataTable.columns(3).data().sum();
-    var db_time     = dc.dataTable.columns(4).data().sum();
-    var duration    = (new Date - dc.scanStart) / 1000;
+    let project_count = dc.dataTable.data().length;
 
-    var project_count = dc.dataTable.data().length;
+    console.log(dc.dataTable.columns(2).data() );
 
-    // console.log(total,unique,duplicates,duration);
+    // Convert column to numerical sum
+    let collisions  = dc.dataTable.columns(2).data()[0].reduce( function(a,b) {
+        return ( isNaN(a) ? 0 : parseFloat(a) ) + ( isNaN(b) ? 0 : parseFloat(b) );
+    });
+
+    let records  = dc.dataTable.columns(3).data()[0].reduce( function(a,b) {
+        return ( isNaN(a) ? 0 : parseFloat(a) ) + ( isNaN(b) ? 0 : parseFloat(b) );
+    });
+
+    let db_time  = dc.dataTable.columns(3).data()[0].reduce( function(a,b) {
+        return ( isNaN(a) ? 0 : parseFloat(a) ) + ( isNaN(b) ? 0 : parseFloat(b) );
+    });
+
+    // var duration    = (new Date - dc.scanStart) / 1000;
+
+    console.log(collisions);
+    console.log(records);
 
     $('div.table-summary').remove();
     var ts = $('<div class="table-summary"/>')
-        .prepend("<span class='badge badge-secondary'>" + dc.formatNumberWithCommas(+(duration/60).toFixed(1)) + "min</span>")
-        .prepend("<span class='badge badge-info'>" + dc.formatNumberWithCommas(records) + " Records Affected</span>")
-        .prepend("<span class='badge badge-dark'>" + dc.formatNumberWithCommas(project_count) + " Projects</span>")
-        .prepend("<span class='badge badge-danger'>" + dc.formatNumberWithCommas(collisions) + " Possible Collisions Found</span>")
-        .prepend("<hr>");
+        // .prepend("<span class='badge badge-secondary'>" + dc.formatNumberWithCommas(+(duration/60).toFixed(1)) + "min</span>")
+        .append("<span class='badge badge-dark'>" + dc.formatNumberWithCommas(project_count) + " Projects</span>")
+        .append("<span class='badge badge-danger'>" + dc.formatNumberWithCommas(collisions) + " Possible Collisions Found</span>")
+        .append("<span class='badge badge-info'>" + dc.formatNumberWithCommas(records) + " Records Affected</span>")
+        .append("<hr>");
 
     $('.dataTable-container')
         .prepend(ts);

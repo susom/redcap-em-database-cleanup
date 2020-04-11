@@ -171,4 +171,13 @@ if (!SUPER_USER) {
         margin-right: 10px;
         font-size: 100%;
     }
+
+    #projects-table td {
+        font-size: 12px;
+    }
+
+    pre.sql {
+        white-space: pre-wrap;
+        font-size: 7pt;
+    }
 </style>
