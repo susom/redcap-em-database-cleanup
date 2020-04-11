@@ -35,6 +35,7 @@ class RecordCollisions
         $projects = array();
         $sql = "select project_id, app_title from redcap_projects where date_deleted is null";
         $q = db_query($sql);
+        $this->module->emDebug("Loaded Projects");
         while ($row = db_fetch_assoc($q)) {
             $pid = $row['project_id'];
             $title = $row['app_title'];
@@ -43,6 +44,8 @@ class RecordCollisions
                 "title" => $title
             );
         }
+        $this->module->emDebug("Constructed projects array");
+
 
         // Get cache dates:
         $sql = "select
@@ -55,7 +58,10 @@ class RecordCollisions
                 rem.directory_prefix = '" . $this->module->PREFIX . "'
                 and rems.key like 'collision_summary_%_date'
                 and rems.type='string'";
+        $this->module->emDebug("Starting query of cache dates", $sql);
         $q = db_query($sql);
+        $this->module->emDebug("Query complete");
+
         $dates = [];
         while ($row = db_fetch_assoc($q)) {
             $pid = str_replace("collision_summary_", "", $row['key']);
@@ -74,7 +80,9 @@ class RecordCollisions
                 rem.directory_prefix = '" . $this->module->PREFIX . "'
                 and rems.key like 'collision_summary_%'
                 and rems.type='json-array'";
+        $this->module->emDebug("Starting query of cache values", $sql);
         $q = db_query($sql);
+        $this->module->emDebug("Query Complete");
         while($row = db_fetch_assoc($q)) {
             $values = json_decode($row['value'], true);
             $project_id = $values['project_id'];
@@ -87,10 +95,6 @@ class RecordCollisions
                 $projects[$project_id]['analysis']['cache_date'] = $dates[$project_id];
             }
         }
-
-        // $this->module->emDebug($projects);
-        $projects = $projects;
-
         return $projects;
     }
 
