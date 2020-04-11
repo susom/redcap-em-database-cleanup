@@ -60,18 +60,29 @@ if (!SUPER_USER) {
         </div>
         <div class="step1">
             <p>
-                <b>Step 1:</b> Scan your REDCap data table for projects with evidence of collisions (e.g. simultaneous
-                saves for the same record within 2 seconds of each other).  This could take a while...
+                <b>Step 1:</b> Load the list of projects (and any cached results you may have previously done)
             </p>
             <div class="input-group input-group-sm mb-3">
-                <input class="mr-4 form-control" name="start-project" placeholder="Start PID (optional)"/>
-                <input class="mr-4 form-control" name="end-project" placeholder="End PID (optional)"/>
-                <button class="btn btn-primaryrc btn-sm" data-action="scan-projects">Scan All Projects</button>
+                <button class="mr-4 btn btn-primaryrc btn-sm" data-action="load-projects">Load Project Table (with Cached Results)</button>
             </div>
-            <p>
-                <button class="btn btn-primaryrc btn-sm" data-action="clear-cache">Clear Cache For All Records</button>
-            </p>
         </div>
+        <div class="step2 hidden">
+            <p>
+                <b>Step 2:</b> Scan all un-scanned projects (storing results in cache along the way) or a subset or projects.
+                Any projects with cached results will be skipped.  Please Start and End blank to scan all.
+            </p>
+            <div class="input-group input-group-sm mb-3">
+                <input class="mr-3 form-control" name="start-project" placeholder="Start PID (optional)"/>
+                <input class="mr-3 form-control" name="end-project" placeholder="End PID (optional)"/>
+                <button class="mr-3 btn btn-primaryrc btn-sm" data-action="scan-projects">Analyze Uncached Projects</button>
+                <button class="btn btn-danger btn-sm" data-pid="*" data-action="clear-cache">Delete Cache for Select Projects</button>
+            </div>
+        </div>
+
+<!--            <p>-->
+<!--                You can clear the cache for records one-at-a-time to rescan or clear all at once-->
+<!--                <button class="btn btn-primaryrc btn-sm" data-action="clear-cache">Clear Cache For All Records</button>-->
+<!--            </p>-->
 
         <div class="progress hidden" style="height: 30px;">
             <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 25%; height: 100%;" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">25%</div>
@@ -82,13 +93,13 @@ if (!SUPER_USER) {
             <table id="projects-table" class="table table-striped table-bordered" style="width:100%">
                 <thead>
                     <tr>
-                        <th>PID</th>
-                        <th>Title</th>
-                        <th># Collisions</th>
-                        <th># Records</th>
-                        <th>Query (ms)</th>
-                        <th>Cached</th>
-                        <th>Action</th>
+<!--                        <th>PID</th>-->
+<!--                        <th>Title</th>-->
+<!--                        <th># Collisions</th>-->
+<!--                        <th># Records</th>-->
+<!--                        <th>Query (ms)</th>-->
+<!--                        <th>Cached</th>-->
+<!--                        <th>Action</th>-->
                     </tr>
                 </thead>
                 <tbody>
@@ -120,9 +131,6 @@ if (!SUPER_USER) {
                     <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width:25%; height:100%;">25%</div>
                 </div>
             </div>
-<!--            <div class="modal-footer">-->
-<!--                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>-->
-<!--            </div>-->
         </div><!-- /.modal-content -->
     </div><!-- /.modal-dialog -->
 </div><!-- /.modal -->
@@ -134,17 +142,11 @@ if (!SUPER_USER) {
     /*Clean up bootstrap formatting for datatables*/
     table.dataTable thead .sorting_asc, table.dataTable thead .sorting_desc, table.dataTable thead .sorting {background-image: none;}
 
-
     #pagecontainer { max-width: inherit; }
-
-    #projects-table td {
-        /*font-size: 80%;*/
-    }
 
     .progress {
         font-size: 1.0rem;
     }
-
     .alert {
         border-color: transparent !important;
     }
@@ -163,10 +165,6 @@ if (!SUPER_USER) {
     .load-spinner .modal-dialog .modal-content{
         background-color: transparent;
         border: none;
-    }
-
-    .left-20 {
-        margin-left: 20px;
     }
 
     .table-summary .badge {

@@ -36,8 +36,8 @@ dc.init = function() {
     });
 
     $('.dataTables_length')
-        .append("<button id='dupes-filter-on' class='left-20 btn btn-xs btn-success' data-action='dupes-filter-on'>Show Dupes Only</button>")
-        .append("<button id='dupes-filter-off' class='left-20 btn btn-xs btn-primary hidden' data-action='dupes-filter-off'>Show All Projects</button>");
+        .append("<button id='dupes-filter-on' class='ml-2 btn btn-xs btn-success' data-action='dupes-filter-on'>Show Dupes Only</button>")
+        .append("<button id='dupes-filter-off' class='ml-2 btn btn-xs btn-primary hidden' data-action='dupes-filter-off'>Show All Projects</button>");
 
 
     // // Set up the Select2 control

@@ -10,6 +10,13 @@ class DatabaseCleanup extends \ExternalModules\AbstractExternalModule
     use emLoggerTrait;
 
 
+    public function cacheResult($key, $message, $project_id = null) {
+
+    }
+
+
+
+
     /**
      * Find if there are duplicate entries in REDCap Data
      * @param $project_id

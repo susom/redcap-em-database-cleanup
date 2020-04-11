@@ -33,27 +33,29 @@ if (!SUPER_USER) {
                 <ul>
                     <li>Having a backup is a REALLY good idea - this tool offers sufficient rope to hang yourself!</li>
                     <li>Most steps can be done on a per-project basis or can be 'batched' across all projects</li>
+                    <li>The code is sort of reusable so you can add your own 'cleanup' task by forking the repo -
+                    please share back!</li>
                 </ul>
             </div>
 
             <div>
-                <a class="btn btn-primaryrc btn-sm" href="<?php echo $module->getUrl("pages/redcap_data_dupes.php")?>">Remove Duplicate Records in REDCap Data</a>
+                <button class="m-3 btn btn-primaryrc btn-sm"
+                        onclick="location.href='<?php echo $module->getUrl("pages/redcap_data_dupes.php")?>'; return false;">
+                    Remove Duplicate Records in REDCap Data
+                </button>
             </div>
 
             <div>
-                <a class="btn btn-primaryrc btn-sm" href="<?php echo $module->getUrl("pages/record_collisions.php")?>">Identify Record Collisions</a>
+                <button class="m-3 btn btn-primaryrc btn-sm"
+                        onclick="location.href='<?php echo $module->getUrl("pages/record_collisions.php")?>';return false;">
+                    Identify Record Collisions
+                </button>
             </div>
-
 <!--            <div class="input-group">-->
 <!--                <span class="input-group-addon" id="project_label">Select a project:</span>-->
 <!--                <select id="project_select"></select>-->
 <!--            </div>-->
-
         </div>
-<!--        <div class="card-footer">-->
-<!--            <div class="btn btn-primaryrc btn-small" data-action="analyze">Analyze</div>-->
-<!--            <div class="btn btn-primaryrc btn-small" data-action="dedup">Remove Duplicates</div>-->
-<!--        </div>-->
     </div>
 </form>
 
@@ -80,9 +82,6 @@ if (!SUPER_USER) {
     //        },
     //        placeholder: 'Select a Project',
     //    }).bind('change',function() { console.log( "Val Changed")});
-    //
-    //
-    //
     //});
 
 </script>

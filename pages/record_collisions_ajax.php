@@ -44,10 +44,18 @@ if (isset($_POST['action'])) {
     $action = $_POST['action'];
     $project_id = isset($_POST['project_id']) ? filter_var($_POST['project_id'], FILTER_SANITIZE_NUMBER_INT) : "";
 
+    $module->emDebug("Incoming Action", $_POST);
+
     // Default error
     $result = array("error" => "Invalid Action");
 
     $rc = new RecordCollisions();
+
+    // Load projects from server/cache to datatable
+    if ($action == "load-projects") {
+        $module->emDebug("Loading Projects");
+        $result = $rc->loadProjects();
+    }
 
     if ($action == "analyze-project") {
         if (empty($project_id)) {
@@ -58,30 +66,19 @@ if (isset($_POST['action'])) {
         }
     }
 
-    if ($action == "get-all-projects") {
-        $result = $rc->getAllProjects();
-        // $result = $module->getAllProjects();
+    // Get the detailed results
+    if ($action == "view-details") {
+        $result = $rc->getCollisionDetail($project_id);
     }
 
+    // Clear the cache for all projects or selected project
     if ($action == "clear-cache") {
-        $result = $rc->clearCache($project_id);
-        // $result = $module->getAllProjects();
+        $project_id    = isset($_POST['project_id']) ? filter_var($_POST['project_id'], FILTER_SANITIZE_STRING) : "";
+        $start_project = isset($_POST['start_project']) ? filter_var($_POST['start_project'], FILTER_SANITIZE_NUMBER_INT) : null;
+        $end_project   = isset($_POST['end_project']) ? filter_var($_POST['end_project'], FILTER_SANITIZE_NUMBER_INT) : null;
+        $result = $rc->clearCache($project_id, $start_project, $end_project);
     }
 
-
-    // if ($action == "dedup-project") {
-    //     $result = $module->deduplicateProject($project_id);
-    // }
 
     echo json_encode($result);
 }
-
-
-//// BUILD PROJECT SELECT
-//$options = array("<option value=''>Select a Project</option>");
-//foreach ($projects as $project_id => $title) {
-//    $options[] = "<option value='$project_id'" .
-//        ( $project_id == $select_pid ? " selected" : "" ).
-//        ">[$project_id] $title</option>";
-//}
-//$select = "<select style='height: 32px;' id='project_select' class='form_control' name='select_pid'>" . implode("",$options) . "</select>";
