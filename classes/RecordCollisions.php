@@ -95,6 +95,7 @@ class RecordCollisions
                 $projects[$project_id]['analysis']['cache_date'] = $dates[$project_id];
             }
         }
+        $this->module->emDebug("Returning projects");
         return $projects;
     }
 

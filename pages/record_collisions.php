@@ -60,7 +60,8 @@ if (!SUPER_USER) {
         </div>
         <div class="step1">
             <p>
-                <b>Step 1:</b> Load the list of projects (and any cached results you may have previously done)
+                <b>Step 1:</b> Load the list of projects (and any cached results you may have previously done)  If you have a large
+                installation and a large cache, this step can take minutes to complete...  Be patient!
             </p>
             <div class="input-group input-group-sm mb-3">
                 <button class="mr-4 btn btn-primaryrc btn-sm" data-action="load-projects">Load Project Table (with Cached Results)</button>
