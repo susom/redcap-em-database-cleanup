@@ -10,9 +10,34 @@ class DatabaseCleanup extends \ExternalModules\AbstractExternalModule
     use emLoggerTrait;
 
 
-    public function cacheResult($key, $message, $project_id = null) {
+    // public function cacheResult(string $message, array $params, array $unique_keys, string $order_by = "") {
+    //     // ALWAYS FIELDS: log_id, timestamp, user, ip, project_id, record, message,
+    //
+    //     // See if entry already exists
+    //     $where = [];
+    //     if (empty($unique_keys) || empty($params) || empty($message)) {
+    //         $this->emError("All arguments are required for cacheResult");
+    //         return false;
+    //     }
+    //     foreach($unique_keys as $key) {
+    //         if (empty($params[$key])) {
+    //             $this->emError("Missing value for required unique key: " . $key, $params, $message);
+    //             return false;
+    //         }
+    //
+    //         $val = $params[$key];
+    //         $where[] = (strtoupper($val) == "NULL") ? "$key IS NULL" : "$key = '$val'";
+    //     }
+    //     $sql = "select log_id where " . implode(" and ", $where) .
+    //         (empty($order_by) ? "" : " order by $order_by")
+    //     ;
+    //
+    //     countLogs()
+    //
+    //     $this->emDebug("Query Sql: $sql");
+    //     $this->queryLogs($sql);
+    // }
 
-    }
 
 
 

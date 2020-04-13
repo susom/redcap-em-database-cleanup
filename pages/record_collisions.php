@@ -76,7 +76,7 @@ if (!SUPER_USER) {
                 <input class="mr-3 form-control" name="start-project" placeholder="Start PID (optional)"/>
                 <input class="mr-3 form-control" name="end-project" placeholder="End PID (optional)"/>
                 <button class="mr-3 btn btn-primaryrc btn-sm" data-action="scan-projects">Analyze Uncached Projects</button>
-                <button class="btn btn-danger btn-sm" data-pid="*" data-action="clear-cache">Delete Cache for Select Projects</button>
+                <button class="btn btn-danger btn-sm" data-action="clear-cache">Delete Cache for Select Projects</button>
             </div>
         </div>
 
