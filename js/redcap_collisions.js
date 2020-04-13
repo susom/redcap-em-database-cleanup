@@ -152,7 +152,8 @@ dc.loadProjectsResult = function(result) {
             dc.addRow(result[key]);
             }
         }
-    dc.hideWaitingModal();
+    setTimeout(dc.hideWaitingModal, 100);
+    // dc.hideWaitingModal();
     dc.dataTable.draw();
     dc.showDataTable();
     dc.updateSummary();
@@ -197,15 +198,19 @@ dc.processAnalysisQueue = function() {
     } else {
         dc.scanStart = new Date();
         dc.updateProgressBar(0);
-        dc.showProgressModal();
+        dc.showProgressModal(0);
         dc.analyzeProject();
     }
 };
 dc.analyzeProject = function() {
     if (dc.analysisQueue.length === 0) {
         console.log("Queue Empty");
-        dc.hideWaitingModal();
-        dc.hideProgressModal();
+
+        // For some reason, a timeout is needed to hide successfully in some cases
+        setTimeout(function() {
+            dc.hideWaitingModal();
+            dc.hideProgressModal();
+        }, 100);
         dc.dataTable.draw();
         dc.showDataTable();
         dc.updateSummary();
