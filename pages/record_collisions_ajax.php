@@ -53,7 +53,7 @@ if (isset($_POST['action'])) {
 
     // Load projects from server/cache to datatable
     if ($action == "load-projects") {
-        $module->emDebug("Loading Projects");
+        // $module->emDebug("Loading Projects");
         $result = $rc->loadProjects();
     }
 
@@ -61,8 +61,8 @@ if (isset($_POST['action'])) {
         if (empty($project_id)) {
             $result = array( "error" => "Missing project id" );
         } else {
-            // Get project
-            $result = $rc->getProjectCollisionSummary($project_id);
+            $skip_cache = isset($_POST['skip_cache']) ? boolval($_POST['skip_cache']) : false;
+            $result = $rc->getCollisions($project_id, $skip_cache);
         }
     }
 
@@ -73,9 +73,9 @@ if (isset($_POST['action'])) {
 
     // Clear the cache for all projects or selected project
     if ($action == "clear-cache") {
-        $project_id    = isset($_POST['project_id']) ? filter_var($_POST['project_id'], FILTER_SANITIZE_STRING) : "";
+        $project_id    = isset($_POST['project_id'])    ? filter_var($_POST['project_id'],    FILTER_SANITIZE_NUMBER_INT) : null;
         $start_project = isset($_POST['start_project']) ? filter_var($_POST['start_project'], FILTER_SANITIZE_NUMBER_INT) : null;
-        $end_project   = isset($_POST['end_project']) ? filter_var($_POST['end_project'], FILTER_SANITIZE_NUMBER_INT) : null;
+        $end_project   = isset($_POST['end_project'])   ? filter_var($_POST['end_project'],   FILTER_SANITIZE_NUMBER_INT) : null;
         $result = $rc->clearCache($project_id, $start_project, $end_project);
     }
 

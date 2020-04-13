@@ -14,6 +14,11 @@ namespace Stanford\DatabaseCleanup;
 
 class RecordCollisions
 {
+
+    const CACHE_TYPE = "record_collision";  // Used to tag all cache entries
+
+    private $projects;  // cache of projects
+
     private $module;
     /** @var $module DatabaseCleanup */
 
@@ -25,6 +30,38 @@ class RecordCollisions
         $this->module = $module;
     }
 
+    /**
+     * Function to get all projects and titles
+     * @param null $project_id
+     * @return array|mixed
+     */
+    public function getProjects($project_id = null) {
+
+        // Load if object cache is empty
+        if(empty($this->projects)) {
+            $this->projects = [];
+
+            // Get all projects
+            $sql = "select project_id, app_title from redcap_projects where date_deleted is null";
+            $q   = db_query($sql);
+            while ($row = db_fetch_assoc($q)) {
+                $pid                  = $row['project_id'];
+                $title                = $row['app_title'];
+                $this->projects[$pid] = array(
+                    "project_id" => $pid,
+                    "title"      => $title
+                );
+            }
+        }
+
+        // Return value
+        if(empty($project_id)) {
+            return $this->projects;
+        } else {
+            return $this->projects[$project_id];
+        }
+    }
+
 
     /**
      * Get all projects along with any existing cache
@@ -32,238 +69,180 @@ class RecordCollisions
      * @return array [ "pid" => [ { pid: xxx, title: "foo", analysis: [ collisions:0, cache:...
      */
     public function loadProjects() {
-        $projects = array();
-        $sql = "select project_id, app_title from redcap_projects where date_deleted is null";
-        $q = db_query($sql);
-        $this->module->emDebug("Loaded Projects");
+
+        $projects = $this->getProjects();
+
+        // Get ALL cache data:
+        $sql = sprintf("select message, project_id, timestamp where type = '%s'",
+                $this::CACHE_TYPE
+        );
+        $q   = $this->module->queryLogs($sql);
+
+        // Add cache data to projects
         while ($row = db_fetch_assoc($q)) {
-            $pid = $row['project_id'];
-            $title = $row['app_title'];
-            $projects[$pid] = array(
-                "pid" => $pid,
-                "title" => $title
-            );
-        }
-        $this->module->emDebug("Constructed projects array");
+            $this->module->emDebug($row);
+            $project_id = $row['project_id'];
 
-
-        // Get cache dates:
-        $sql = "select
-                rems.key,
-                rems.value
-            from
-                redcap_external_module_settings rems
-                join redcap_external_modules rem on rem.external_module_id = rems.external_module_id
-            where
-                rem.directory_prefix = '" . $this->module->PREFIX . "'
-                and rems.key like 'collision_summary_%_date'
-                and rems.type='string'";
-        $this->module->emDebug("Starting query of cache dates", $sql);
-        $q = db_query($sql);
-        $this->module->emDebug("Query complete");
-
-        $dates = [];
-        while ($row = db_fetch_assoc($q)) {
-            $pid = str_replace("collision_summary_", "", $row['key']);
-            $pid = str_replace("_date", "", $pid);
-            $dates[$pid] = $row['value'];
-        }
-
-        // Get cache results
-        $sql = "select
-                rems.key,
-                rems.value
-            from
-                redcap_external_module_settings rems
-                join redcap_external_modules rem on rem.external_module_id = rems.external_module_id
-            where
-                rem.directory_prefix = '" . $this->module->PREFIX . "'
-                and rems.key like 'collision_summary_%'
-                and rems.type='json-array'";
-        $this->module->emDebug("Starting query of cache values", $sql);
-        $q = db_query($sql);
-        $this->module->emDebug("Query Complete");
-        while($row = db_fetch_assoc($q)) {
-            $values = json_decode($row['value'], true);
-            $project_id = $values['project_id'];
-            if (!isset($projects[$project_id])) {
-                // Project has been deleted
-                continue;
+            if(isset($projects[$project_id])) {
+                $this->module->emDebug($projects[$project_id]);
+                $projects[$project_id] = array_merge(
+                    $projects[$project_id],
+                    json_decode($row['message'], true),
+                    array("timestamp" => $row['timestamp'])
+                );
+                $this->module->emDebug($projects[$project_id]);
             } else {
-                // Add cached info to projects payload
-                $projects[$project_id]['analysis'] = $values;
-                $projects[$project_id]['analysis']['cache_date'] = $dates[$project_id];
+                // Cache exists for a project that is no longer in the database
+                // TODO: delete this cache
             }
         }
-        $this->module->emDebug("Returning projects");
+
+        // $this->module->emDebug("Returning projects.  (first five)", array_slice($projects,0,5));
         return $projects;
     }
 
 
     /**
-     * Clear the cache for the project
-     * @param null $project_id (can be * for all, or a specific project ID
+     * Clear the cache for a project or range of projects
+     * @param null $project_id (can be null for all, or a specific project ID
      * @param null $start is the lower end project_id for a range
      * @param null $end is the higher end project_id for a range
      * @return bool|int
+     * @throws \Exception
      */
     public function clearCache($project_id = null, $start=null, $end=null) {
 
-        $sql = [];
-        $preSql = "delete rems.* from redcap_external_module_settings rems
-                join redcap_external_modules rem on rem.external_module_id = rems.external_module_id
-                where rem.directory_prefix = '" . $this->module->PREFIX . "' ";
+        $where = "type = '" . $this::CACHE_TYPE . "' ";
 
-        if ($project_id == "*") {
+        if ($project_id === null) {
             // This is a request to delete everything (or a large range of project caches)
-            if (empty($start) && empty($end)) {
-                // Delete everything
-                $sql[] = $preSql . "and rems.key like 'collision_summary_%'";
-            } else {
-                // We have a range of IPs to delete
-                $projects = $this->loadProjects();
-                foreach ($projects as $pid => $data) {
-                    $pid = intval($pid);
+            if (!empty($start)) {
+                $where .= " AND project_id >= " . intval($start);
+            }
 
-                    if (!empty($start) && $pid < intval($start)) continue;
-                    if (!empty($end) && $pid > intval($end)) continue;
-                    $sql[] = $preSql ."and rems.key like 'collision_summary_" . $pid . "%'";
-                }
+            if (!empty($end)) {
+                $where .= " AND project_id <= " . intval($end);
             }
         } else {
-            $sql[] = $preSql ."and rems.key like 'collision_summary_" . intval($project_id) . "%'";
+            // Deleting just one project
+            $where .= " AND project_id = " . intval($project_id);
         }
+        $result = $this->module->removeLogs($where);
 
-        $count = 0;
-        $this->module->emDebug($sql);
-        foreach ($sql as $s) {
-            $q = db_query($s);
-            $this->module->emDebug("Clearing Cache", $q, $s);
-
-            if (!$q) {
-                $this->module->emError("Error clearing cache!", $q);
-                return false;
-            }
-            $count =+ db_affected_rows();
-        }
-
-        return $count/2;
-
-        // $sql = "delete rems.* from
-        //         redcap_external_module_settings rems
-        //         join redcap_external_modules rem on rem.external_module_id = rems.external_module_id
-        //     where
-        //         rem.directory_prefix = '" . $this->module->PREFIX . "' and rems.key like 'collision_summary_" . $pid . "%'";
-        //
-        // $this->module->emDebug("clearing Cache", $sql);
-        //
-        // $q = db_query($sql);
-
-        // if(!$q) {
-        //     $this->module->emError("Error clearing cache", $q);
-        //     $result = false;
-        // } else {
-        //     $result = db_affected_rows();
-        //     $this->module->emDebug("Cleared cache, $result cleared");
-        // }
-        //
-        // return $result;
+        $this->module->emDebug("Remove cache where $where", $result, db_affected_rows());
+        return db_affected_rows();
     }
 
 
     /**
-     * Look through a project to see if the project has any suspicious double-data-entries in log
-     * @param $project_id
-     * @return array|mixed|null
+     * Get the collision data.  If skip-cache is set true, then ignore the cache
+     * @param      $project_id
+     * @param bool $skip_cache
+     * @return array
+     * @throws \Exception
      */
-    public function getProjectCollisionSummary($project_id) {
-
-        $result_key = "collision_summary_" . $project_id;
-        $date_key = $result_key . "_date";
-
-        // // See if we have a cache
-        //
-        // if ($result = $this->module->getSystemSetting($result_key)) {
-        //     // get the date
-        //     $date = $this->module->getSystemSetting($date_key);
-        //     // TODO: Have an expiration of the date
-        //     if (!empty($date)) {
-        //         $this->module->emDebug("Returning from cache: ", $result);
-        //
-        //         // Set duration to 0 to indicate cache
-        //         $result['cache_date'] = $date;
-        //         return $result;
-        //     }
-        // }
-
-        // Analyze the project
-        $start_ts = microtime(true);
-        $project_id = intval($project_id);
-
-        $log_event_table = method_exists('\REDCap', 'getLogEventTable') ? \REDCap::getLogEventTable($project_id) : "redcap_log_event";
-
-        $sql = sprintf("select
-                p.project_id,
-                p.app_title,
-                count(*) as collisions,
-                count(distinct l.pk) as records
-            from
-                redcap_projects p
-                join %s l
-                    on l.project_id=p.project_id
-                    and l.event = 'INSERT'
-                    and l.event_id IS NOT NULL
-                inner join %s m on
-                    l.pk = m.pk
-                    and l.event = m.event
-                    and l.event_id = m.event_id
-                    and l.project_id = m.project_id
-                    and l.log_event_id != m.log_event_id
-                    and l.data_values != m.data_values
-                    and abs(l.ts - m.ts) < 3
-            where
-                p.project_id = %d
-            group by
-                p.project_id, p.app_title
-            order by
-                p.project_id",
-            $log_event_table,
-            $log_event_table,
-            db_escape($project_id)
-        );
-
-        $this->module->emDebug($sql);
-
-        $q = db_query($sql);
-
-        if (db_num_rows($q) > 0) {
-            $row        = db_fetch_assoc($q);
-            $collisions = $row['collisions'];
-            $records    = $row['records'];
-        } else {
-            $collisions = 0;
-            $records    = 0;
+    public function getCollisions($project_id, $skip_cache = false) {
+        if (! $skip_cache) {
+            // Check cache first
+            $sql = sprintf("select message, timestamp where project_id = %d and type = '%s'",
+                $project_id,
+                $this::CACHE_TYPE
+            );
+            $q   = $this->module->queryLogs($sql);
+            if ($row = db_fetch_assoc($q)) {
+                $message = array_merge(
+                    json_decode($row['message'], true),
+                    array(
+                        "timestamp" => $row['timestamp'],
+                        "project_id" => $project_id
+                    )
+                );
+                $this->module->emDebug("Retrieved project $project_id by cache");
+                return $message;
+            }
         }
 
-        $date =  date('Y-m-d H:i:s');
+        // Do the query
+        $result = $this->getCollisionDetail($project_id);
 
-        $result = array(
-            "project_id" => $project_id,
-            "collisions" => $collisions,
-            "records"    => $records,
-            "duration"   => round((microtime(true) - $start_ts) * 1000, 3)
+        // Remove previous cache (if any)
+        $sql = sprintf("project_id = %d and type = '%s'",
+            $project_id,
+            $this::CACHE_TYPE
         );
+        $q = $this->module->removeLogs($sql);
+        $this->module->emDebug("Removing logs if they exist", $q);
 
-        $this->module->setSystemSetting($result_key, $result);
-        $this->module->setSystemSetting($date_key,$date);
-
-        $result['cache'] = 0;
-        $result['cache_date'] = $date;
+        // Cache new result
+        $message = json_encode($result);
+        $q = $this->module->log($message, array(
+            "project_id" => $project_id,
+            "type"  => $this::CACHE_TYPE
+        ));
+        $this->module->emDebug("Cached result", $q);
 
         return $result;
     }
 
 
+    /**
+     * Get collision details
+     * @param $project_id
+     * @return array
+     */
+    public function getCollisionDetail($project_id) {
+
+        // Analyze the project
+        $start_ts = microtime(true);
+        $project_id = intval($project_id);
+
+        // PASSING ON VISUALIZING THIS FOR NOW - ITS MILLER TIME.
+        // return $sql;
+
+        // Start the result with the pid and title
+        $result = $this->getProjects($project_id);
+
+        // Query for results
+        $sql = $this->getCollisionDetailSql($project_id);
+        $q = db_query($sql);
+        $result['row_count']  = db_num_rows($q);
+
+
+        $rows = [];
+        $overlap = [];
+        while ($row = db_fetch_assoc($q)) {
+            $rows[] = $row;
+            // parse the data values to see if there is any overlap
+            $dv1 = $this->parseDataValues($row['data_values']);
+            $dv2 = $this->parseDataValues($row['data_values_2']);
+
+            // Do any keys overlap?
+            $common_keys = array_intersect_key($dv1,$dv2);
+            if (!empty($common_keys)) {
+                $details = [];
+                foreach($common_keys as $k => $v) {
+                    $details[] = "[$k] is [" . $dv1[$k] . "] AND [" . $dv2[$k] . "]";
+                }
+                $overlap[] = array(
+                    "record" => $row['pk'],
+                    "event" => $row['event_id'],
+                    "details" => implode(", ", $details)
+                );
+            }
+        }
+        $result['raw_data'] = $rows;
+        $result['overlap']  = $overlap;
+        $result['duration'] = round((microtime(true) - $start_ts) * 1000, 3);
+
+        return $result;
+    }
+
+
+    /**
+     * Get collision detail SQL
+     * @param $project_id
+     * @return string|string[]|null
+     */
     public function getCollisionDetailSql($project_id) {
         $log_event_table = method_exists('\REDCap', 'getLogEventTable') ? \REDCap::getLogEventTable($project_id) : "redcap_log_event";
 
@@ -288,7 +267,7 @@ class RecordCollisions
                     and l.event = m.event
                     and l.event_id = m.event_id
                     and l.project_id = m.project_id
-                    and l.log_event_id != m.log_event_id
+                    and l.log_event_id < m.log_event_id
                     and l.data_values != m.data_values
                     and abs(l.ts - m.ts) < 3
             where
@@ -304,29 +283,20 @@ class RecordCollisions
         return $sql;
     }
 
-    public function getCollisionDetail($project_id) {
 
-        // Analyze the project
-        $start_ts = microtime(true);
-        $project_id = intval($project_id);
-
-        $sql = $this->getCollisionDetailSql($project_id);
-
-        return $sql;
-
-        // PASSING ON VISUALIZING THIS FOR NOW - ITS MILLER TIME.
-        $q = db_query($sql);
-
-        $data = [];
-        while ($row = db_fetch_assoc($q)) {
-            $data[] = $row;
+    /**
+     * Help parse out fields and values from the log table
+     * @param $data_values
+     * @return array
+     */
+    public function parseDataValues($data_values) {
+		$result = [];
+        $v = explode(",\n", $data_values);
+        foreach ($v as $val) {
+            list ($key, $val) = explode(" = ", $val, 2);
+            $result[$key] = $val;
         }
-
-        $result = array(
-            "data"       => $data,
-            "duration"   => round((microtime(true) - $start_ts) * 1000, 3)
-        );
-
         return $result;
     }
+
 }

@@ -11,6 +11,7 @@ dc.init = function() {
 
     dc.projects = [];
     dc.analysisQueue = [];
+    dc.skipCache = false;
 
     // Bind buttons
     $('.container').on('click', 'button', dc.buttonPress);
@@ -27,13 +28,13 @@ dc.init = function() {
             title: "Potential Collisions"
         },
         {
-            title: "Records Affected"
+            title: "Fields Overlapped"
         },
         {
             title: "Query Time(ms)"
         },
         {
-            title: "Cache Date"
+            title: "Cache Timestamp"
         },
         {
             title: "Actions"
@@ -47,7 +48,14 @@ dc.init = function() {
 
     // Set up the datatable
     dc.dataTable = $('#projects-table').DataTable({
-        "order": [[ 3, "desc" ]],
+        "order": [[ 0, "desc" ]],
+        // "columnDefs": [ {
+        //     "targets": -1,
+        //     "data": null,
+        //     "orderable": false,
+        //     "className": 'details-control',
+        //     "defaultContent": ''
+        // } ]
         // "columns": [
         //     { "width": "10%" },
         //     { "width": "40%" },
@@ -66,6 +74,7 @@ dc.init = function() {
         //     { "width": "10%", "targets": 0 },
         //     { "width": "10%", "targets": 0 }
         // ]
+
     });
 
     $('.dataTables_length')
@@ -88,18 +97,22 @@ dc.buttonPress = function() {
     else if (action === 'scan-projects') {
         dc.scanProjects();
     }
-    else if (action === 'clear-cache') {
-        pid = $(this).data('pid');
-        dc.clearCache(pid);
-    }
     else if (action === 'analyze') {
-        pid = $(this).data('pid');
+        const pid = $(this).data('pid');
+        dc.skipCache = $(this).data('skip-cache') == true;
+        console.log($(this).data('skip-cache'), dc.skipCache);
         dc.analysisQueue.push(pid);
         dc.processAnalysisQueue();
     }
+    else if (action === 'clear-cache') {
+        const pid = $(this).data('pid');
+        dc.clearCache(pid);
+    }
+
+
     else if (action === "view-details") {
         // Show Details
-        pid = $(this).data('pid');
+        const pid = $(this).data('pid');
         dc.viewDetails(pid);
     }
     else if (action === "collision-filter-on") {
@@ -158,8 +171,8 @@ dc.scanProjects = function() {
             const project = dc.projects[pid];
             if(!isNaN(dc.startProject) && parseInt(pid,10) < dc.startProject) continue;
             if(!isNaN(dc.endProject)   && parseInt(pid,10) > dc.endProject)   continue;
-            if(project.hasOwnProperty('analysis')) {
-                // Skip this one
+            if(project.hasOwnProperty('timestamp')) {
+                // Skip this one - already cached
                 console.log('skipping');
             } else {
                 dc.analysisQueue.push(pid);
@@ -178,7 +191,6 @@ dc.processAnalysisQueue = function() {
 
     dc.analysisCount = dc.analysisQueue.length;
     dc.analysisIndex = 0;
-    console.log("Before", dc.analysisQueue);
 
     if(dc.analysisCount == 0) {
         // Nothing to process
@@ -197,18 +209,16 @@ dc.analyzeProject = function() {
         dc.dataTable.draw();
         dc.showDataTable();
         dc.updateSummary();
+        dc.skipCache = false;   // reset to default behavior
         return true;
     }
-    pid = dc.analysisQueue.shift();
-    dc.ajax({action: "analyze-project", project_id: pid}, dc.analyzeProjectResults);
+    const project_id = dc.analysisQueue.shift();
+    console.log("skipCache", dc.skipCache);
+    dc.ajax({action: "analyze-project", project_id: project_id, skip_cache: dc.skipCache}, dc.analyzeProjectResults);
 };
 dc.analyzeProjectResults = function(result) {
-    // Save result to project
-    let project = dc.projects[pid];
-    project.analysis = result;
-
     // Add row to table
-    dc.addRow(project)
+    dc.addRow(result);
 
     // Update progress
     dc.analysisIndex++;
@@ -273,43 +283,50 @@ dc.viewDetailsResult = function(results) {
 /**
  * Add a row to the datatable
  * You may need to adjust the columns here
- * @param project
+ * @param row // {"project_id":x,"title":"foo","row_count":0,"raw_data":[],"overlap":[],"duration":17.325,
+ *            // "timestamp":"yyyy-mm-dd HH:ii:ss" (optional)}
  */
-dc.addRow = function(project) {
+dc.addRow = function(row) {
     // console.log(project);
 
     // Cache the project row
-    dc.projects[project.pid] = project;
+    let project_id = row.project_id;
+
+    dc.projects[project_id] = row;
 
     // Build each column for the table
-    const pk = "<a href='" + app_path_webroot + "?pid=" + project.pid + "' target='_BLANK'>" + project.pid + "</a>";
-    const title = project.title;
+    const pk = "<a href='" + app_path_webroot + "?pid=" + project_id + "' target='_BLANK'>" + project_id + "</a>";
+    const title = row.title;
 
-    const analysis = project.hasOwnProperty('analysis') ? project.analysis : false;
-    const collisions = analysis ? analysis.collisions : "-";
-    const records    = analysis ? analysis.records : "-";
-    const duration   = analysis ? analysis.duration : null;
-    const cache_date = analysis ? analysis.cache_date : "";
+    // const analysis = project.hasOwnProperty('analysis') ? project.analysis : false;
+    const collisions = row.hasOwnProperty('row_count') ? row.row_count      : "-";
+    const overlaps   = row.hasOwnProperty('overlap')   ? row.overlap.length : "-";
+    const duration   = row.hasOwnProperty('duration')  ? row.duration       : null;
+    const timestamp  = row.hasOwnProperty('timestamp') ? row.timestamp      : "";
 
+    const overlap    = row.hasOwnProperty('overlap')   ? row.overlap        : null;
+    const raw_data   = row.hasOwnProperty('raw_data')  ? row.raw_data       : null
 
     let actions = "";
 
-    if(cache_date == "") {
-        actions = actions + "<button class='btn btn-xs btn-primary' data-action='analyze' data-pid='" + project.pid + "'>Analyze</button>";
+    if(duration === null) {
+        actions = actions + "<button class='btn btn-xs btn-primary' data-action='analyze' " +
+            "data-pid='" + project_id + "'>Analyze</button>";
     } else {
-        actions = actions + "<button class='btn btn-xs btn-secondary' data-action='analyze' data-pid='" + project.pid + "'>Refresh</button>";
+        actions = actions + "<button class='btn btn-xs btn-secondary' data-action='analyze' " +
+            "data-skip-cache=1 data-pid='" + project_id + "'>Refresh</button>";
     }
     if(collisions > 0) {
-        actions = actions + "<button class='ml-2 btn btn-xs btn-success' data-action='view-details' data-pid='" + project.pid + "'>Details</button>";
+        actions = actions + "<button class='ml-2 btn btn-xs btn-success' data-action='view-details' data-pid='" + project_id + "'>Details</button>";
     }
 
     // Remove the row if it already exists
     let existingRow = $("#projects-table tr").filter(function() {
-        return $('td:first', this).text() == project.pid;
+        return $('td:first', this).text() == row.project_id;
     });
     if (existingRow.length) {
         // Subtract from totals
-        console.log ("Removing row " + project.pid);
+        console.log ("Removing row " + project_id);
         dc.dataTable.row(existingRow).remove();
     }
 
@@ -318,15 +335,23 @@ dc.addRow = function(project) {
             pk,
             title,
             collisions,
-            records,
+            overlaps,
             duration,
-            cache_date,
+            timestamp,
             actions
         ]
-    );
+    )
+    // .child(
+    //     $(
+    //         '<tr>' +
+    //             '<td colspan="7">' + raw_data + '</td>' +
+    //         '</tr>'
+    //     )
+    // ).show()
+    ;
 
     if (collisions) dc.collisionCount += collisions;
-    if (records) dc.recordCount       += records;
+    if (overlap)    dc.overlapCount   += overlap;
     dc.dataTable.draw();
 };
 
