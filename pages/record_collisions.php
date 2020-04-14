@@ -18,11 +18,15 @@ if (!SUPER_USER) {
 
 <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
 <link href="https://cdn.datatables.net/1.10.19/css/dataTables.bootstrap4.min.css" rel="stylesheet" />
+<!--https://www.jqueryscript.net/other/jQuery-Plugin-For-Easily-Readable-JSON-Data-Viewer.html-->
+<link href="<?php echo $module->getUrl("js/json-viewer/jquery.json-viewer.css") ?>" rel="stylesheet"/>
+<link href="https://cdn.datatables.net/responsive/2.2.3/css/responsive.dataTables.min.css" rel="stylesheet"/>
 
 <script src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/plug-ins/1.10.19/api/sum().js"></script>
 <script src="https://cdn.datatables.net/1.10.19/js/dataTables.bootstrap4.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
+<script src="<?php echo $module->getUrl("js/json-viewer/jquery.json-viewer.js") ?>"></script>
 
 <script src="<?php echo $module->getUrl("js/redcap_collisions.js") ?>"></script>
 

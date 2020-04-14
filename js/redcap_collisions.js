@@ -49,6 +49,19 @@ dc.init = function() {
     // Set up the datatable
     dc.dataTable = $('#projects-table').DataTable({
         "order": [[ 0, "desc" ]],
+        // responsive: {
+        //     details: {
+        //         type: 'column',
+        //         target: 'tr'
+        //     }
+        // },
+        // columnDefs: [ {
+        //     className: 'details-control',
+        //     orderable: false,
+        //     data: null,
+        //     defaultContent: ''
+        // } ]
+        //
         // "columnDefs": [ {
         //     "targets": -1,
         //     "data": null,
@@ -111,9 +124,23 @@ dc.buttonPress = function() {
 
 
     else if (action === "view-details") {
-        // Show Details
-        const pid = $(this).data('pid');
-        dc.viewDetails(pid);
+        let tr = $(this).closest('tr');
+        let row = dc.dataTable.row( tr );
+
+        console.log(row);
+
+        if ( row.child.isShown() ) {
+            // This row is already open - close it
+            row.child.hide();
+            tr.removeClass('shown');
+        }
+        else {
+            // Open this row
+            row.child().show();
+            tr.addClass('shown');
+        }
+        // const pid = $(this).data('pid');
+        // dc.viewDetails(pid);
     }
     else if (action === "collision-filter-on") {
         regExSearch = '[^0-]+';
@@ -193,7 +220,7 @@ dc.processAnalysisQueue = function() {
     dc.analysisCount = dc.analysisQueue.length;
     dc.analysisIndex = 0;
 
-    if(dc.analysisCount == 0) {
+    if(dc.analysisCount === 0) {
         // Nothing to process
     } else {
         dc.scanStart = new Date();
@@ -205,7 +232,6 @@ dc.processAnalysisQueue = function() {
 dc.analyzeProject = function() {
     if (dc.analysisQueue.length === 0) {
         console.log("Queue Empty");
-
         // For some reason, a timeout is needed to hide successfully in some cases
         setTimeout(function() {
             dc.hideWaitingModal();
@@ -289,7 +315,7 @@ dc.viewDetailsResult = function(results) {
  * Add a row to the datatable
  * You may need to adjust the columns here
  * @param row // {"project_id":x,"title":"foo","row_count":0,"raw_data":[],"overlap":[],"duration":17.325,
- *            // "timestamp":"yyyy-mm-dd HH:ii:ss" (optional)}
+ *            // "unique_records":44,"timestamp":"yyyy-mm-dd HH:ii:ss" (optional)}
  */
 dc.addRow = function(row) {
     // console.log(project);
@@ -300,12 +326,14 @@ dc.addRow = function(row) {
     dc.projects[project_id] = row;
 
     // Build each column for the table
-    const pk = "<a href='" + app_path_webroot + "?pid=" + project_id + "' target='_BLANK'>" + project_id + "</a>";
+    const pk = "<a href='" + app_path_webroot + "?pid=" + project_id + "' " +
+        "data-pidRow=" + project_id + " target='_BLANK'>" + project_id + "</a>";
+
     const title = row.title;
 
     // const analysis = project.hasOwnProperty('analysis') ? project.analysis : false;
     const collisions = row.hasOwnProperty('row_count') ? row.row_count      : "-";
-    const overlaps   = row.hasOwnProperty('overlap')   ? row.overlap.length : "-";
+    const distinct_records = row.hasOwnProperty('distinct_records')   ? row.distinct_records.length : "-";
     const duration   = row.hasOwnProperty('duration')  ? row.duration       : null;
     const timestamp  = row.hasOwnProperty('timestamp') ? row.timestamp      : "";
 
@@ -335,24 +363,34 @@ dc.addRow = function(row) {
         dc.dataTable.row(existingRow).remove();
     }
 
-    dc.dataTable.row.add(
+    // Build childrow:
+    let child_json = $('<pre class="json-viewer"/>')
+        .jsonViewer(row, {
+            collapsed:true
+        });
+
+    let child_row = child_json.wrap('<td colspan="7"/>').wrap("<tr/>");
+
+    let r = dc.dataTable.row.add(
         [
             pk,
             title,
             collisions,
-            overlaps,
+            distinct_records,
             duration,
             timestamp,
             actions
         ]
     )
-    // .child(
-    //     $(
-    //         '<tr>' +
-    //             '<td colspan="7">' + raw_data + '</td>' +
-    //         '</tr>'
-    //     )
-    // ).show()
+    .child(
+        child_row
+        // $(
+        //     '<tr>' +
+        //         '<td colspan="7"><pre class="json-viewer"/>=' + raw_data + '""</td>' +
+        //
+        //     '</tr>'
+        // )
+    )//.show()
     ;
 
     if (collisions) dc.collisionCount += collisions;

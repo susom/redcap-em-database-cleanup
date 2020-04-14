@@ -210,8 +210,12 @@ class RecordCollisions
 
         $rows = [];
         $overlap = [];
+        $distinct_pks = []; // Distinct PKs
         while ($row = db_fetch_assoc($q)) {
             $rows[] = $row;
+
+            $distinct_pks[] = $row['pk'];
+
             // parse the data values to see if there is any overlap
             $dv1 = $this->parseDataValues($row['data_values']);
             $dv2 = $this->parseDataValues($row['data_values_2']);
@@ -221,15 +225,16 @@ class RecordCollisions
             if (!empty($common_keys)) {
                 $details = [];
                 foreach($common_keys as $k => $v) {
-                    $details[] = "[$k] is [" . $dv1[$k] . "] AND [" . $dv2[$k] . "]";
+                    $details[] = "[$k] is " . $dv1[$k] . " AND " . $dv2[$k];
                 }
                 $overlap[] = array(
                     "record" => $row['pk'],
                     "event" => $row['event_id'],
-                    "details" => implode(", ", $details)
+                    "details" => implode(",\n", $details)
                 );
             }
         }
+        $result['distinct_records'] = array_unique($distinct_pks);
         $result['raw_data'] = $rows;
         $result['overlap']  = $overlap;
         $result['duration'] = round((microtime(true) - $start_ts) * 1000, 3);
@@ -250,6 +255,7 @@ class RecordCollisions
                 p.project_id,
                 l.event_id,
                 l.pk,
+                l.page,
                 l.data_values,
                 m.data_values as data_values_2,
                 l.ts,
