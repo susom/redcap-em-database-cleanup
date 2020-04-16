@@ -168,25 +168,35 @@ dc.buttonPress = function() {
 dc.loadProjects = function() {
     dc.hideDataTable();
     dc.dataTable.clear();
-    dc.showWaitingModal();
+    // dc.showWaitingModal();
+    dc.updateProgressBar(0);
+    dc.showProgressModal(0);
+
     dc.ajax({"action": "load-projects"}, dc.loadProjectsResult);
 };
 dc.loadProjectsResult = function(result) {
-    console.log("loaded " + result.length + " projects with cached results",result);
+    const result_count = Object.keys(result).length;
+    console.log("loaded " + result_count + " projects with cached results");
+
+    // Sometimes this happens too fast so the hide doesn't register.  Adding a timeout.
+    // setTimeout(dc.hideWaitingModal, 100);
+
+    // Set up progress bar for adding rows...
+    let result_index = 0;
     for (let key in result) {
         if (result.hasOwnProperty(key) && ! isNaN(key)) {
-            let pid = key;
-
-            // Add row to table
             dc.addRow(result[key]);
-            }
         }
-    // Sometimes this happens too fast so the hide doesn't register.  Adding a timeout.
-    setTimeout(dc.hideWaitingModal, 100);
+        result_index++;
+        let percent = Math.round(result_index / result_count * 1000) / 10;
+        dc.updateProgressBar(percent, percent + "% (" + result_index + "/" + result_count + ")");
+        console.log(percent);
+    }
     dc.dataTable.draw();
     dc.showDataTable();
     dc.updateSummary();
     dc.showStep(2);
+    setTimeout(dc.hideProgressModal, 100);
 };
 
 

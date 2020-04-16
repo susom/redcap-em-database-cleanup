@@ -80,8 +80,8 @@ class RecordCollisions
 
         // Add cache data to projects
         while ($row = db_fetch_assoc($q)) {
-            $this->module->emDebug($row);
             $project_id = $row['project_id'];
+            $this->module->emDebug($project_id);
 
             if(isset($projects[$project_id])) {
                 $this->module->emDebug($projects[$project_id]);
@@ -90,7 +90,7 @@ class RecordCollisions
                     json_decode($row['message'], true),
                     array("timestamp" => $row['timestamp'])
                 );
-                $this->module->emDebug($projects[$project_id]);
+                // $this->module->emDebug($projects[$project_id]);
             } else {
                 // Cache exists for a project that is no longer in the database
                 // TODO: delete this cache

@@ -172,3 +172,7 @@ if (!SUPER_USER) {
         font-size: 100%;
     }
 </style>
+
+<?php
+
+    require APP_PATH_DOCROOT . "ControlCenter/footer.php";
