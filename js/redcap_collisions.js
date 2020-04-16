@@ -25,10 +25,10 @@ dc.init = function() {
             title: "Title"
         },
         {
-            title: "Potential Collisions"
+            title: "Likely Collisions"
         },
         {
-            title: "Records"
+            title: "Affected Records"
         },
         {
             title: "Query Time(ms)"
@@ -266,6 +266,7 @@ dc.analyzeProjectResults = function(result) {
         let percent = Math.round((((dc.analysisCount - dc.analysisQueue.length) / dc.analysisCount)) * 100);
         dc.updateProgressBar(percent, percent + "% (" + dc.analysisIndex + "/" + dc.analysisCount + ")");
         dc.progressUpdate = now;
+        dc.updateSummary();
         update_delay = 10;
     }
 

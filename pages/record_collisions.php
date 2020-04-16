@@ -77,7 +77,7 @@ if (!SUPER_USER) {
                         </li>
                         <li>
                             You might want to enable your browser 'debugger tools' and follow the console to see how the
-                            process is going before hitting the 'Scan All Projects' button.
+                            process is going before hitting the 'Load Projects Table' button.
                         </li>
                     </ul>
                 </div>
