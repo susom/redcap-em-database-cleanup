@@ -348,7 +348,7 @@ dc.addRow = function(row, skip_redraw) {
     const title = row.title;
 
     const collisions       = row.hasOwnProperty('collisions')              ? row.collisions.length               : "-";
-    const empty_records    = row.hasOwnProperty('empty_record_collisions') ? row.empty_record_collisions.length : "-";
+    const empty_records    = row.hasOwnProperty('empty_record_collisions') ? row.empty_record_collisions.length  : "-";
     const records          = row.hasOwnProperty('distinct_records')        ? row.distinct_records.length         : "-";
     const duration         = row.hasOwnProperty('duration')                ? row.duration                        : null;
     const timestamp        = row.hasOwnProperty('timestamp')               ? row.timestamp                       : "";

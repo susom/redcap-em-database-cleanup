@@ -235,7 +235,7 @@ class RecordCollisions
                 if ($row['pk'] == "") {
                     // This is an 'empty record' collision.  Not sure what these mean but they are different
                     // from the ones affected by the bug in 2020-03
-                    $empty_record_collisions[$row['log_event_id']] = array(
+                    $empty_record_collisions[] = array(
                         "event"         => $row['event_id'],
                         "differences"   => $differences
                     );
