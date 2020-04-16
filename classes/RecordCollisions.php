@@ -210,7 +210,8 @@ class RecordCollisions
         // Each row is a potential collision, e.g. save to same record with different values
         $rows = [];
         $collisions = [];               // These are potential collisions filtered to those that had different data values
-        $affected_fields = [];    // These are the fields where differences were logged in the project
+        $empty_record_collisions = [];  // There are a lot of these empty pk collisions - not sure what they are about...
+        $affected_fields = [];          // These are the fields where differences were logged in the project
         $distinct_records = [];         // Distinct records
         while ($row = db_fetch_assoc($q)) {
             // parse the data values to see if there is any overlap in fields between the two saves
@@ -231,21 +232,31 @@ class RecordCollisions
                 }
             }
             if (!empty($differences)) {
+                if ($row['pk'] == "") {
+                    // This is an 'empty record' collision.  Not sure what these mean but they are different
+                    // from the ones affected by the bug in 2020-03
+                    $empty_record_collisions[$row['log_event_id']] = array(
+                        "event"         => $row['event_id'],
+                        "differences"   => $differences
+                    );
+                } else {
+                    $collisions[] = array(
+                        "record"        => $row['pk'],
+                        "event"         => $row['event_id'],
+                        "differences"   => $differences
+                    );
+                    $distinct_records[] = $row['pk'];
+                }
                 $rows[$row['log_event_id']] = $row;
-                $distinct_records[] = $row['pk'];
-                $collisions[] = array(
-                    "record"        => $row['pk'],
-                    "event"         => $row['event_id'],
-                    "differences"   => $differences
-                );
             }
         }
 
-        $result['distinct_records'] = array_unique($distinct_records);
-        $result['affected_fields']  = array_count_values($affected_fields);
-        $result['duration']         = round((microtime(true) - $start_ts) * 1000, 3);
-        $result['collisions']       = $collisions;
-        $result['raw_data']         = array("sql" => [$sql], "results" => $rows);
+        $result['distinct_records']        = array_unique($distinct_records);
+        $result['affected_fields']         = array_count_values($affected_fields);
+        $result['duration']                = round((microtime(true) - $start_ts), 2);   // seconds
+        $result['collisions']              = $collisions;
+        $result['empty_record_collisions'] = $empty_record_collisions;
+        $result['raw_data']                = array("sql" => [$sql], "results" => $rows);
 
         $this->module->emDebug($result);
         return $result;

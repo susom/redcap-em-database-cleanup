@@ -28,10 +28,13 @@ dc.init = function() {
             title: "Likely Collisions"
         },
         {
+            title: "Empty Records"
+        },
+        {
             title: "Affected Records"
         },
         {
-            title: "Query Time(ms)"
+            title: "Query Time(sec)"
         },
         {
             title: "Cache Timestamp"
@@ -48,7 +51,7 @@ dc.init = function() {
 
     // Set up the datatable
     dc.dataTable = $('#projects-table').DataTable({
-        "order": [[ 2, "desc" ]],
+        "order": [[ 2, "desc" ], [4, "desc"]],
         responsive: {
             details: {
                 type: 'column',
@@ -344,10 +347,11 @@ dc.addRow = function(row, skip_redraw) {
 
     const title = row.title;
 
-    const collisions       = row.hasOwnProperty('collisions')       ? row.collisions.length       : "-";
-    const records          = row.hasOwnProperty('distinct_records') ? row.distinct_records.length : "-";
-    const duration         = row.hasOwnProperty('duration')         ? row.duration                : null;
-    const timestamp        = row.hasOwnProperty('timestamp')        ? row.timestamp               : "";
+    const collisions       = row.hasOwnProperty('collisions')              ? row.collisions.length               : "-";
+    const empty_records    = row.hasOwnProperty('empty_record_collisions') ? row.empty_record_collisions.length : "-";
+    const records          = row.hasOwnProperty('distinct_records')        ? row.distinct_records.length         : "-";
+    const duration         = row.hasOwnProperty('duration')                ? row.duration                        : null;
+    const timestamp        = row.hasOwnProperty('timestamp')               ? row.timestamp                       : "";
 
     // const overlap    = row.hasOwnProperty('overlap')   ? row.overlap        : null;
     // const raw_data   = row.hasOwnProperty('raw_data')  ? row.raw_data       : null
@@ -383,13 +387,14 @@ dc.addRow = function(row, skip_redraw) {
             // collapsed:true
         });
 
-    let child_row = child_json.wrap('<td colspan="7"/>').wrap("<tr/>");
+    let child_row = child_json.wrap('<td class="child" colspan="' + dc.columns.length + '"/>').wrap("<tr/>");
 
     let r = dc.dataTable.row.add(
         [
             pk,
             title,
             collisions,
+            empty_records,
             records,
             duration,
             timestamp,
@@ -468,23 +473,23 @@ dc.formatNumberWithCommas = function(x) {
 };
 
 dc.updateSummary = function() {
-    let project_count = dc.dataTable.columns(0).data()[0].length;
+    let project_count = dc.dataTable.columns(0).data()[0].filter(String).length; //('').split('').length;
 
     // Convert column to numerical sum
     let collisions  = dc.dataTable.columns(2).data()[0].reduce( function(a,b) {
         return ( isNaN(a) ? 0 : parseFloat(a) ) + ( isNaN(b) ? 0 : parseFloat(b) );
     });
 
-    let records  = dc.dataTable.columns(3).data()[0].reduce( function(a,b) {
+    let records  = dc.dataTable.columns(4).data()[0].reduce( function(a,b) {
         return ( isNaN(a) ? 0 : parseFloat(a) ) + ( isNaN(b) ? 0 : parseFloat(b) );
     });
 
-    let db_time  = dc.dataTable.columns(4).data()[0].reduce( function(a,b) {
+    let db_time  = dc.dataTable.columns(5).data()[0].reduce( function(a,b) {
         return ( isNaN(a) ? 0 : parseFloat(a) ) + ( isNaN(b) ? 0 : parseFloat(b) );
     });
     db_time = isNaN(db_time) ? 0 : db_time;
 
-    let number_done = dc.dataTable.columns(4).data()[0].filter(function(x){ return x == x*1 }).length;
+    let number_done = dc.dataTable.columns(5).data()[0].filter(function(x){ return x == x*1 }).length;
 
     $('div.table-summary').remove();
     let ts = $('<div class="table-summary"/>')
@@ -492,7 +497,7 @@ dc.updateSummary = function() {
         .append("<span class='badge badge-info'>" + dc.formatNumberWithCommas(records) + " Affected Records</span>")
         .append("<span class='badge badge-secondary'>" + dc.formatNumberWithCommas(number_done) + " of " +
             dc.formatNumberWithCommas(project_count) + " (" + (number_done/project_count*100).toFixed(1) +
-            "%) Projects Analyzed in " + dc.formatNumberWithCommas(+(db_time/60/60).toFixed(1)) + " minutes</span>")
+            "%) Projects Analyzed in " + dc.formatNumberWithCommas(+(db_time/60).toFixed(2)) + " minutes</span>")
         .append("<hr>");
 
     $('.dataTable-container')

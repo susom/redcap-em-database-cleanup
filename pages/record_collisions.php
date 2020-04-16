@@ -127,7 +127,7 @@ if (!SUPER_USER) {
 <!--                        <th>Title</th>-->
 <!--                        <th># Collisions</th>-->
 <!--                        <th># Records</th>-->
-<!--                        <th>Query (ms)</th>-->
+<!--                        <th>Query (sec)</th>-->
 <!--                        <th>Cached</th>-->
 <!--                        <th>Action</th>-->
                     </tr>
