@@ -468,7 +468,7 @@ dc.formatNumberWithCommas = function(x) {
 };
 
 dc.updateSummary = function() {
-    let project_count = dc.dataTable.data().length;
+    let project_count = dc.dataTable.columns(0).data()[0].length;
 
     // Convert column to numerical sum
     let collisions  = dc.dataTable.columns(2).data()[0].reduce( function(a,b) {
