@@ -472,8 +472,12 @@ dc.formatNumberWithCommas = function(x) {
     return parts.join(".");
 };
 
+dc.isParent = function(c) {
+    return c.startsWith("<a");
+};
+
 dc.updateSummary = function() {
-    let project_count = dc.dataTable.columns(0).data()[0].filter(String).length; //('').split('').length;
+    let project_count = dc.dataTable.columns(0).data()[0].filter(dc.isParent).length; //('').split('').length;
 
     // Convert column to numerical sum
     let collisions  = dc.dataTable.columns(2).data()[0].reduce( function(a,b) {
