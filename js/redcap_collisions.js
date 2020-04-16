@@ -185,7 +185,7 @@ dc.loadProjectsResult = function(result) {
     let result_index = 0;
     for (let key in result) {
         if (result.hasOwnProperty(key) && ! isNaN(key)) {
-            dc.addRow(result[key]);
+            dc.addRow(result[key], true);
         }
         result_index++;
         let percent = Math.round(result_index / result_count * 1000) / 10;
@@ -333,7 +333,7 @@ dc.viewDetailsResult = function(results) {
  * @param row // {"project_id":x,"title":"foo","raw_data":[],"overlap":[],"duration":17.325,
  *            // "unique_records":44,"timestamp":"yyyy-mm-dd HH:ii:ss" (optional)}
  */
-dc.addRow = function(row) {
+dc.addRow = function(row, skip_redraw) {
     // console.log(project);
 
     // Cache the project row
@@ -406,7 +406,7 @@ dc.addRow = function(row) {
     if (! isNaN(records))    dc.recordCount    += records;
 
     console.log(row);
-    dc.dataTable.draw();
+    if (! skip_redraw) dc.dataTable.draw();
 };
 
 /**
