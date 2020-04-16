@@ -188,13 +188,17 @@ dc.loadProjectsResult = function(result) {
             dc.addRow(result[key], true);
         }
         result_index++;
-        let percent = Math.round(result_index / result_count * 1000) / 10;
+        let p = {
+            "percent": Math.round(result_index / result_count * 1000) / 10,
+            "text": percent + "% (" + result_index + "/" + result_count + ")"
+        };
 
         // Trying to get around limits
         setTimeout(function() {
-            dc.updateProgressBar(percent, percent + "% (" + result_index + "/" + result_count + ")");
-            console.log("updating with percent " + percent);
-        }, 10);
+            dc.updateProgressBar(p.percent, p.text);
+            console.log("updating with percent " + p.percent);
+        }, 10, p);
+
         // console.log(percent);
     }
     dc.dataTable.draw();
@@ -484,6 +488,7 @@ dc.updateSummary = function() {
     let db_time  = dc.dataTable.columns(4).data()[0].reduce( function(a,b) {
         return ( isNaN(a) ? 0 : parseFloat(a) ) + ( isNaN(b) ? 0 : parseFloat(b) );
     });
+    db_time = isNaN(db_time) ? 0 : db_time;
 
     let number_done = dc.dataTable.columns(4).data()[0].filter(function(x){ return x == x*1 }).length;
 
