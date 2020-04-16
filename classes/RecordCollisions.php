@@ -205,40 +205,49 @@ class RecordCollisions
         // Query for results
         $sql = $this->getCollisionDetailSql($project_id);
         $q = db_query($sql);
-        $result['row_count']  = db_num_rows($q);
+        // $result['row_count']  = db_num_rows($q);
 
-
+        // Each row is a potential collision, e.g. save to same record with different values
         $rows = [];
-        $overlap = [];
-        $distinct_pks = []; // Distinct PKs
+        $collisions = [];               // These are potential collisions filtered to those that had different data values
+        $affected_fields = [];    // These are the fields where differences were logged in the project
+        $distinct_records = [];         // Distinct records
         while ($row = db_fetch_assoc($q)) {
-            $rows[] = $row;
-
-            $distinct_pks[] = $row['pk'];
-
-            // parse the data values to see if there is any overlap
+            // parse the data values to see if there is any overlap in fields between the two saves
             $dv1 = $this->parseDataValues($row['data_values']);
             $dv2 = $this->parseDataValues($row['data_values_2']);
-
-            // Do any keys overlap?
             $common_keys = array_intersect_key($dv1,$dv2);
+
+            // See if the values in the overlapping fields are different, otherwise ignore
+            $differences = [];
             if (!empty($common_keys)) {
-                $details = [];
                 foreach($common_keys as $k => $v) {
-                    $details[] = "[$k] is " . $dv1[$k] . " AND " . $dv2[$k];
+                    $v1 = $dv1[$k];
+                    $v2 = $dv2[$k];
+                    if ($v1 !== $v2) {
+                        $differences[] = "[$k] is both " . $dv1[$k] . " and " . $dv2[$k];
+                        $affected_fields[] = $k;
+                    }
                 }
-                $overlap[] = array(
-                    "record" => $row['pk'],
-                    "event" => $row['event_id'],
-                    "details" => implode(",\n", $details)
+            }
+            if (!empty($differences)) {
+                $rows[$row['log_event_id']] = $row;
+                $distinct_records[] = $row['pk'];
+                $collisions[] = array(
+                    "record"        => $row['pk'],
+                    "event"         => $row['event_id'],
+                    "differences"   => $differences
                 );
             }
         }
-        $result['distinct_records'] = array_unique($distinct_pks);
-        $result['raw_data'] = $rows;
-        $result['overlap']  = $overlap;
-        $result['duration'] = round((microtime(true) - $start_ts) * 1000, 3);
 
+        $result['distinct_records'] = array_unique($distinct_records);
+        $result['affected_fields']  = array_count_values($affected_fields);
+        $result['duration']         = round((microtime(true) - $start_ts) * 1000, 3);
+        $result['collisions']       = $collisions;
+        $result['raw_data']         = array("sql" => [$sql], "results" => $rows);
+
+        $this->module->emDebug($result);
         return $result;
     }
 

@@ -28,7 +28,7 @@ dc.init = function() {
             title: "Potential Collisions"
         },
         {
-            title: "Fields Overlapped"
+            title: "Records"
         },
         {
             title: "Query Time(ms)"
@@ -48,13 +48,13 @@ dc.init = function() {
 
     // Set up the datatable
     dc.dataTable = $('#projects-table').DataTable({
-        "order": [[ 0, "desc" ]],
-        // responsive: {
-        //     details: {
-        //         type: 'column',
-        //         target: 'tr'
-        //     }
-        // },
+        "order": [[ 2, "desc" ]],
+        responsive: {
+            details: {
+                type: 'column',
+                target: 'tr'
+            }
+        }
         // columnDefs: [ {
         //     className: 'details-control',
         //     orderable: false,
@@ -113,7 +113,7 @@ dc.buttonPress = function() {
     else if (action === 'analyze') {
         const pid = $(this).data('pid');
         dc.skipCache = $(this).data('skip-cache') == true;
-        console.log($(this).data('skip-cache'), dc.skipCache);
+        // console.log($(this).data('skip-cache'), dc.skipCache);
         dc.analysisQueue.push(pid);
         dc.processAnalysisQueue();
     }
@@ -124,20 +124,22 @@ dc.buttonPress = function() {
 
 
     else if (action === "view-details") {
+        let pid = $(this).data('pid');
         let tr = $(this).closest('tr');
-        let row = dc.dataTable.row( tr );
+        // console.log("TR",tr.length,tr);
+        // console.log(dc.dataTable.row(tr).child);
 
-        console.log(row);
-
-        if ( row.child.isShown() ) {
+        if ( dc.dataTable.row(tr).child.isShown() ) {
             // This row is already open - close it
-            row.child.hide();
-            tr.removeClass('shown');
+            dc.dataTable.row(tr).child.hide();
+            // tr.removeClass('shown');
         }
         else {
             // Open this row
-            row.child().show();
-            tr.addClass('shown');
+            dc.dataTable.row(tr).child.show();
+
+            // toggle the raw_results in the next child row by default
+            $('a.json-toggle:contains("raw_data")', tr.next()).not(".collapsed").trigger('click');
         }
         // const pid = $(this).data('pid');
         // dc.viewDetails(pid);
@@ -170,7 +172,7 @@ dc.loadProjects = function() {
     dc.ajax({"action": "load-projects"}, dc.loadProjectsResult);
 };
 dc.loadProjectsResult = function(result) {
-    console.log("loadProjectsResult",result);
+    console.log("loaded " + result.length + " projects with cached results",result);
     for (let key in result) {
         if (result.hasOwnProperty(key) && ! isNaN(key)) {
             let pid = key;
@@ -179,8 +181,8 @@ dc.loadProjectsResult = function(result) {
             dc.addRow(result[key]);
             }
         }
+    // Sometimes this happens too fast so the hide doesn't register.  Adding a timeout.
     setTimeout(dc.hideWaitingModal, 100);
-    // dc.hideWaitingModal();
     dc.dataTable.draw();
     dc.showDataTable();
     dc.updateSummary();
@@ -244,7 +246,7 @@ dc.analyzeProject = function() {
         return true;
     }
     const project_id = dc.analysisQueue.shift();
-    console.log("skipCache", dc.skipCache);
+    // console.log("skipCache", dc.skipCache);
     dc.ajax({action: "analyze-project", project_id: project_id, skip_cache: dc.skipCache}, dc.analyzeProjectResults);
 };
 dc.analyzeProjectResults = function(result) {
@@ -314,7 +316,7 @@ dc.viewDetailsResult = function(results) {
 /**
  * Add a row to the datatable
  * You may need to adjust the columns here
- * @param row // {"project_id":x,"title":"foo","row_count":0,"raw_data":[],"overlap":[],"duration":17.325,
+ * @param row // {"project_id":x,"title":"foo","raw_data":[],"overlap":[],"duration":17.325,
  *            // "unique_records":44,"timestamp":"yyyy-mm-dd HH:ii:ss" (optional)}
  */
 dc.addRow = function(row) {
@@ -322,7 +324,6 @@ dc.addRow = function(row) {
 
     // Cache the project row
     let project_id = row.project_id;
-
     dc.projects[project_id] = row;
 
     // Build each column for the table
@@ -331,17 +332,17 @@ dc.addRow = function(row) {
 
     const title = row.title;
 
-    // const analysis = project.hasOwnProperty('analysis') ? project.analysis : false;
-    const collisions = row.hasOwnProperty('row_count') ? row.row_count      : "-";
-    const distinct_records = row.hasOwnProperty('distinct_records')   ? row.distinct_records.length : "-";
-    const duration   = row.hasOwnProperty('duration')  ? row.duration       : null;
-    const timestamp  = row.hasOwnProperty('timestamp') ? row.timestamp      : "";
+    const collisions       = row.hasOwnProperty('collisions')       ? row.collisions.length       : "-";
+    const records          = row.hasOwnProperty('distinct_records') ? row.distinct_records.length : "-";
+    const duration         = row.hasOwnProperty('duration')         ? row.duration                : null;
+    const timestamp        = row.hasOwnProperty('timestamp')        ? row.timestamp               : "";
 
-    const overlap    = row.hasOwnProperty('overlap')   ? row.overlap        : null;
-    const raw_data   = row.hasOwnProperty('raw_data')  ? row.raw_data       : null
+    // const overlap    = row.hasOwnProperty('overlap')   ? row.overlap        : null;
+    // const raw_data   = row.hasOwnProperty('raw_data')  ? row.raw_data       : null
 
     let actions = "";
 
+    // See if we have analyzed this row before
     if(duration === null) {
         actions = actions + "<button class='btn btn-xs btn-primary' data-action='analyze' " +
             "data-pid='" + project_id + "'>Analyze</button>";
@@ -349,8 +350,9 @@ dc.addRow = function(row) {
         actions = actions + "<button class='btn btn-xs btn-secondary' data-action='analyze' " +
             "data-skip-cache=1 data-pid='" + project_id + "'>Refresh</button>";
     }
+    // Add a details button if there are collisions
     if(collisions > 0) {
-        actions = actions + "<button class='ml-2 btn btn-xs btn-success' data-action='view-details' data-pid='" + project_id + "'>Details</button>";
+        actions = actions + "<br/><button class='mt-1 btn btn-xs btn-success text-nowrap' data-action='view-details' data-pid='" + project_id + "'>Toggle Details</button>";
     }
 
     // Remove the row if it already exists
@@ -366,7 +368,7 @@ dc.addRow = function(row) {
     // Build childrow:
     let child_json = $('<pre class="json-viewer"/>')
         .jsonViewer(row, {
-            collapsed:true
+            // collapsed:true
         });
 
     let child_row = child_json.wrap('<td colspan="7"/>').wrap("<tr/>");
@@ -376,7 +378,7 @@ dc.addRow = function(row) {
             pk,
             title,
             collisions,
-            distinct_records,
+            records,
             duration,
             timestamp,
             actions
@@ -384,17 +386,12 @@ dc.addRow = function(row) {
     )
     .child(
         child_row
-        // $(
-        //     '<tr>' +
-        //         '<td colspan="7"><pre class="json-viewer"/>=' + raw_data + '""</td>' +
-        //
-        //     '</tr>'
-        // )
-    )//.show()
-    ;
+    );
 
-    if (collisions) dc.collisionCount += collisions;
-    if (overlap)    dc.overlapCount   += overlap;
+    if (! isNaN(collisions)) dc.collisionCount += collisions;
+    if (! isNaN(records))    dc.recordCount    += records;
+
+    console.log(row);
     dc.dataTable.draw();
 };
 
@@ -452,19 +449,14 @@ dc.updateProgressBar = function(percent, text) {
         .text(text);
 };
 
-
-
 dc.formatNumberWithCommas = function(x) {
     var parts = x.toString().split(".");
     parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
     return parts.join(".");
 };
 
-
 dc.updateSummary = function() {
     let project_count = dc.dataTable.data().length;
-
-    console.log(dc.dataTable.columns(2).data() );
 
     // Convert column to numerical sum
     let collisions  = dc.dataTable.columns(2).data()[0].reduce( function(a,b) {
@@ -475,21 +467,19 @@ dc.updateSummary = function() {
         return ( isNaN(a) ? 0 : parseFloat(a) ) + ( isNaN(b) ? 0 : parseFloat(b) );
     });
 
-    let db_time  = dc.dataTable.columns(3).data()[0].reduce( function(a,b) {
+    let db_time  = dc.dataTable.columns(4).data()[0].reduce( function(a,b) {
         return ( isNaN(a) ? 0 : parseFloat(a) ) + ( isNaN(b) ? 0 : parseFloat(b) );
     });
 
-    // var duration    = (new Date - dc.scanStart) / 1000;
-
-    console.log(collisions);
-    console.log(records);
+    let number_done = dc.dataTable.columns(4).data()[0].filter(function(x){ return x == x*1 }).length;
 
     $('div.table-summary').remove();
-    var ts = $('<div class="table-summary"/>')
-        // .prepend("<span class='badge badge-secondary'>" + dc.formatNumberWithCommas(+(duration/60).toFixed(1)) + "min</span>")
-        .append("<span class='badge badge-dark'>" + dc.formatNumberWithCommas(project_count) + " Projects</span>")
-        .append("<span class='badge badge-danger'>" + dc.formatNumberWithCommas(collisions) + " Possible Collisions Found</span>")
-        .append("<span class='badge badge-info'>" + dc.formatNumberWithCommas(records) + " Records Affected</span>")
+    let ts = $('<div class="table-summary"/>')
+        .append("<span class='badge badge-danger'>" + dc.formatNumberWithCommas(collisions) + " Collisions</span>")
+        .append("<span class='badge badge-info'>" + dc.formatNumberWithCommas(records) + " Affected Records</span>")
+        .append("<span class='badge badge-secondary'>" + dc.formatNumberWithCommas(number_done) + " of " +
+            dc.formatNumberWithCommas(project_count) + " (" + (number_done/project_count*100).toFixed(1) +
+            "%) Projects Analyzed in " + dc.formatNumberWithCommas(+(db_time/60/60).toFixed(1)) + " minutes</span>")
         .append("<hr>");
 
     $('.dataTable-container')

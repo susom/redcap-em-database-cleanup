@@ -16,16 +16,21 @@ if (!SUPER_USER) {
 
 ?>
 
-<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
-<link href="https://cdn.datatables.net/1.10.19/css/dataTables.bootstrap4.min.css" rel="stylesheet" />
-<!--https://www.jqueryscript.net/other/jQuery-Plugin-For-Easily-Readable-JSON-Data-Viewer.html-->
-<link href="<?php echo $module->getUrl("js/json-viewer/jquery.json-viewer.css") ?>" rel="stylesheet"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.12/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.datatables.net/1.10.20/css/dataTables.bootstrap4.min.css" rel="stylesheet" />
+<link href="https://cdn.datatables.net/responsive/2.2.3/css/responsive.bootstrap4.min.css" rel="stylesheet" />
 <link href="https://cdn.datatables.net/responsive/2.2.3/css/responsive.dataTables.min.css" rel="stylesheet"/>
 
-<script src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/plug-ins/1.10.19/api/sum().js"></script>
-<script src="https://cdn.datatables.net/1.10.19/js/dataTables.bootstrap4.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
+<!--https://www.jqueryscript.net/other/jQuery-Plugin-For-Easily-Readable-JSON-Data-Viewer.html-->
+<link href="<?php echo $module->getUrl("js/json-viewer/jquery.json-viewer.css") ?>" rel="stylesheet"/>
+
+<script src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/responsive/2.2.3/js/dataTables.responsive.min.js"></script>
+<script src="https://cdn.datatables.net/responsive/2.2.3/js/responsive.bootstrap4.min.js"></script>
+<script src="https://cdn.datatables.net/1.10.20/js/dataTables.bootstrap4.min.js"></script>
+
+<script src="https://cdn.datatables.net/plug-ins/1.10.20/api/sum().js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.12/js/select2.min.js"></script>
 <script src="<?php echo $module->getUrl("js/json-viewer/jquery.json-viewer.js") ?>"></script>
 
 <script src="<?php echo $module->getUrl("js/redcap_collisions.js") ?>"></script>
@@ -44,16 +49,32 @@ if (!SUPER_USER) {
             <div class="card-body">
                 <h4>REDCap Record Collisions</h4>
                 <div>
-                    <p>This job scans redcap_data project-by-project to detect record collisions where two different users might be saving data to the same record id.
+                    <p>This job scans redcap_data project-by-project to detect record collisions where two different
+                        users might be saving data to the same record id.  It does this by looking for log entries
+                        for the same project/record/event/instance within a set 'delta' of one another.  This delta
+                        can be configured in the EM settings and defaults to < 3 seconds.
+                    </p>
+                    <p>
+                        When two saves are found, the actual data in those saves is compared.  A contemporaneous save
+                        is only marked as a collision of the values differ for the same fieldname in the two saves.
+                        I'm sure there are legitimate reasons for some of these entries, but I haven't gotten further
+                        in the tool so each 'hit' should be examined carefully and not assumed to be due to a bug in
+                        the code.
                     </p>
                     <ul>
-                        <li>Having a backup is a REALLY good idea - this tool offers sufficient rope to hang yourself!</li>
+                        <li>Having a backup is a REALLY good idea - although this particular function doesn't delete
+                            any data from the normal redcap tables, it is always a good idea when working your database
+                            hard.  Other features in this module do offer sufficient rope to hang yourself!
+                        </li>
                         <li>The scanning process was throttled to a single thread to reduce the impact on your database.
                             This means it may take a long time to scan your entire redcap_data table, but other users
-                            should be able to continue using the system with an acceptable impact to performance.</li>
-                        <li>The scan stores a cache of the result in the external module settings table.  So, if you do
+                            should be able to continue using the system with an acceptable impact to performance.
+                        </li>
+                        <li>The scan stores a cache of the result in the external module log table.  So, if you do
                             not finish in one session, you can restart and it will quickly catch up to where you left
-                            off using the cached values.</li>
+                            off using the cached values.  You may want to start with a small block of project_ids instead
+                            of trying to scan your entire database
+                        </li>
                         <li>
                             You might want to enable your browser 'debugger tools' and follow the console to see how the
                             process is going before hitting the 'Scan All Projects' button.
@@ -73,8 +94,10 @@ if (!SUPER_USER) {
         </div>
         <div class="step2 hidden">
             <p>
-                <b>Step 2:</b> Scan all un-scanned projects (storing results in cache along the way) or a subset or projects.
-                Any projects with cached results will be skipped.  Please Start and End blank to scan all.
+                <b>Step 2:</b> Scan un-scanned projects (storing results in cache along the way) or a subset or projects.
+                Any projects with cached results will be skipped.  Leave Start and End blank to scan all records but this
+                can take a very long time.  I suggest starting with 100 or 1000 projects to get an idea.  It will cache
+                as it goes so you can always come back later and resume.
             </p>
             <div class="input-group input-group-sm mb-3">
                 <input class="mr-3 form-control" name="start-project" placeholder="Start PID (optional)"/>
@@ -90,7 +113,9 @@ if (!SUPER_USER) {
 <!--            </p>-->
 
         <div class="progress hidden" style="height: 30px;">
-            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 25%; height: 100%;" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">25%</div>
+            <div class="progress-bar progress-bar-striped progress-bar-animated"
+                 role="progressbar"
+                 style="width: 25%; height: 100%;" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">25%</div>
         </div>
 
         <div class="dataTable-container hidden">
