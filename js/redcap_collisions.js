@@ -188,8 +188,9 @@ dc.loadProjectsResult = function(result) {
             dc.addRow(result[key], true);
         }
         result_index++;
+        const percent = Math.round(result_index / result_count * 1000) / 10;
         let p = {
-            "percent": Math.round(result_index / result_count * 1000) / 10,
+            "percent": percent,
             "text": percent + "% (" + result_index + "/" + result_count + ")"
         };
 
