@@ -23,8 +23,6 @@ if (!SUPER_USER) {
 
 <script src="https://cdn.datatables.net/plug-ins/1.10.19/api/sum().js"></script>
 
-
-
 <script src="https://cdn.datatables.net/1.10.19/js/dataTables.bootstrap4.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
 
@@ -53,6 +51,13 @@ if (!SUPER_USER) {
                         <li>The scanning process was throttled to a single thread to reduce the impact on your database.  This means it may take
                             a long time to scan your entire redcap_data table, but other users should be able to continue using the system with
                             an acceptable impact to performance.</li>
+                        <li>
+                            I would recommend testing this on a dev/backup database first.  I AM NOT RESPONSIBLE FOR DELETION OF DATA!
+                        </li>
+                        <li>
+                            Obviously, since this is done as a transaction, any writes to the table while it is running
+                            would be lost so it is a good idea to only do this when webapp is in offline mode
+                        </li>
                     </ul>
                 </div>
             </div>
