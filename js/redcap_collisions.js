@@ -189,8 +189,13 @@ dc.loadProjectsResult = function(result) {
         }
         result_index++;
         let percent = Math.round(result_index / result_count * 1000) / 10;
-        dc.updateProgressBar(percent, percent + "% (" + result_index + "/" + result_count + ")");
-        console.log(percent);
+
+        // Trying to get around limits
+        setTimeout(function() {
+            dc.updateProgressBar(percent, percent + "% (" + result_index + "/" + result_count + ")");
+            console.log("updating with percent " + percent);
+        }, 10);
+        // console.log(percent);
     }
     dc.dataTable.draw();
     dc.showDataTable();
@@ -198,7 +203,6 @@ dc.loadProjectsResult = function(result) {
     dc.showStep(2);
     setTimeout(dc.hideProgressModal, 100);
 };
-
 
 
 /**

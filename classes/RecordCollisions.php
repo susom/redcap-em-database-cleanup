@@ -258,6 +258,10 @@ class RecordCollisions
      * @return string|string[]|null
      */
     public function getCollisionDetailSql($project_id) {
+
+        $gap = $this->module->getSystemSetting('collision-event-gap');
+        $gap = !empty($gap) && is_numeric($gap) ? intval($gap) : 2;
+
         $log_event_table = method_exists('\REDCap', 'getLogEventTable') ? \REDCap::getLogEventTable($project_id) : "redcap_log_event";
 
         $sql = sprintf("select
@@ -284,13 +288,14 @@ class RecordCollisions
                     and l.project_id = m.project_id
                     and l.log_event_id < m.log_event_id
                     and l.data_values != m.data_values
-                    and abs(l.ts - m.ts) < 3
+                    and abs(l.ts - m.ts) <= %d
             where
                 p.project_id = %d
             order by
                 p.project_id, l.event_id, l.pk, l.ts",
             $log_event_table,
             $log_event_table,
+            $gap,
             db_escape($project_id)
         );
         // Clean up spacing

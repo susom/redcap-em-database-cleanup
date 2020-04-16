@@ -27,6 +27,12 @@
 
   "system-settings": [
     {
+      "key": "collision-event-gap",
+      "name": "<b>Gap in time (seconds) for collision detection</b><br>Defaults to <= 2 seconds",
+      "required": false,
+      "type": "text"
+    },
+    {
       "key": "enable-system-debug-logging",
       "name": "<b>Enable Debug Logging (system-wide)</b>",
       "required": false,
