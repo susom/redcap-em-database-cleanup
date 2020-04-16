@@ -28,10 +28,10 @@ dc.init = function() {
             title: "Likely Collisions"
         },
         {
-            title: "Empty Records"
+            title: "Affected Records"
         },
         {
-            title: "Affected Records"
+            title: "Empty Records"
         },
         {
             title: "Query Time(sec)"
@@ -348,8 +348,8 @@ dc.addRow = function(row, skip_redraw) {
     const title = row.title;
 
     const collisions       = row.hasOwnProperty('collisions')              ? row.collisions.length               : "-";
-    const empty_records    = row.hasOwnProperty('empty_record_collisions') ? row.empty_record_collisions.length  : "-";
     const records          = row.hasOwnProperty('distinct_records')        ? row.distinct_records.length         : "-";
+    const empty_records    = row.hasOwnProperty('empty_record_collisions') ? row.empty_record_collisions.length  : "-";
     const duration         = row.hasOwnProperty('duration')                ? row.duration                        : null;
     const timestamp        = row.hasOwnProperty('timestamp')               ? row.timestamp                       : "";
 
@@ -394,8 +394,8 @@ dc.addRow = function(row, skip_redraw) {
             pk,
             title,
             collisions,
-            empty_records,
             records,
+            empty_records,
             duration,
             timestamp,
             actions
@@ -480,14 +480,14 @@ dc.updateSummary = function() {
         return ( isNaN(a) ? 0 : parseFloat(a) ) + ( isNaN(b) ? 0 : parseFloat(b) );
     });
 
-    let records  = dc.dataTable.columns(4).data()[0].reduce( function(a,b) {
+    let records  = dc.dataTable.columns(3).data()[0].reduce( function(a,b) {
         return ( isNaN(a) ? 0 : parseFloat(a) ) + ( isNaN(b) ? 0 : parseFloat(b) );
     });
 
     let db_time  = dc.dataTable.columns(5).data()[0].reduce( function(a,b) {
-        return ( isNaN(a) ? 0 : parseFloat(a) ) + ( isNaN(b) ? 0 : parseFloat(b) );
+        return ( isNaN(a) || a == null ? 0 : parseFloat(a) ) + ( isNaN(b) || b == null ? 0 : parseFloat(b) );
     });
-    db_time = isNaN(db_time) ? 0 : db_time;
+    db_time = isNaN(db_time) || db_time == null ? 0 : db_time;
 
     let number_done = dc.dataTable.columns(5).data()[0].filter(function(x){ return x == x*1 }).length;
 
