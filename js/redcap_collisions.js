@@ -168,9 +168,7 @@ dc.buttonPress = function() {
 dc.loadProjects = function() {
     dc.hideDataTable();
     dc.dataTable.clear();
-    // dc.showWaitingModal();
-    dc.updateProgressBar(0);
-    dc.showProgressModal(0);
+    dc.showWaitingModal();
 
     dc.ajax({"action": "load-projects"}, dc.loadProjectsResult);
 };
@@ -178,35 +176,19 @@ dc.loadProjectsResult = function(result) {
     const result_count = Object.keys(result).length;
     console.log("loaded " + result_count + " projects with cached results");
 
-    // Sometimes this happens too fast so the hide doesn't register.  Adding a timeout.
-    // setTimeout(dc.hideWaitingModal, 100);
-
-    // Set up progress bar for adding rows...
-    let result_index = 0;
     for (let key in result) {
         if (result.hasOwnProperty(key) && ! isNaN(key)) {
             dc.addRow(result[key], true);
         }
-        result_index++;
-        const percent = Math.round(result_index / result_count * 1000) / 10;
-        let p = {
-            "percent": percent,
-            "text": percent + "% (" + result_index + "/" + result_count + ")"
-        };
-
-        // Trying to get around limits
-        setTimeout(function() {
-            dc.updateProgressBar(p.percent, p.text);
-            console.log("updating with percent " + p.percent);
-        }, 200, p);
-
-        // console.log(percent);
     }
+
     dc.dataTable.draw();
     dc.showDataTable();
     dc.updateSummary();
     dc.showStep(2);
-    setTimeout(dc.hideProgressModal, 100);
+
+    // Sometimes this happens too fast so the hide doesn't register.  Adding a timeout.
+    setTimeout(dc.hideWaitingModal, 100);
 };
 
 
@@ -240,6 +222,7 @@ dc.processAnalysisQueue = function() {
 
     dc.analysisCount = dc.analysisQueue.length;
     dc.analysisIndex = 0;
+    dc.progressUpdate = 0;
 
     if(dc.analysisCount === 0) {
         // Nothing to process
@@ -274,11 +257,20 @@ dc.analyzeProjectResults = function(result) {
 
     // Update progress
     dc.analysisIndex++;
-    let percent = Math.round((((dc.analysisCount - dc.analysisQueue.length) / dc.analysisCount)) * 100);
-    dc.updateProgressBar(percent, percent + "% (" + dc.analysisIndex + "/" + dc.analysisCount + ")");
+
+    // do we need to update?
+    let update_delay = 1;
+    const now = +new Date();
+    if ((now-dc.progressUpdate) > 1000) {
+        // it has been a second since last update
+        let percent = Math.round((((dc.analysisCount - dc.analysisQueue.length) / dc.analysisCount)) * 100);
+        dc.updateProgressBar(percent, percent + "% (" + dc.analysisIndex + "/" + dc.analysisCount + ")");
+        dc.progressUpdate = now;
+        update_delay = 10;
+    }
 
     // Get next queue member
-    setTimeout(dc.analyzeProject, 1);
+    setTimeout(dc.analyzeProject, update_delay);
 };
 
 
