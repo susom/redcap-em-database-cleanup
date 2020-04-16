@@ -198,7 +198,7 @@ dc.loadProjectsResult = function(result) {
         setTimeout(function() {
             dc.updateProgressBar(p.percent, p.text);
             console.log("updating with percent " + p.percent);
-        }, 10, p);
+        }, 200, p);
 
         // console.log(percent);
     }
@@ -278,7 +278,7 @@ dc.analyzeProjectResults = function(result) {
     dc.updateProgressBar(percent, percent + "% (" + dc.analysisIndex + "/" + dc.analysisCount + ")");
 
     // Get next queue member
-    dc.analyzeProject()
+    setTimeout(dc.analyzeProject, 1);
 };
 
 
