@@ -251,7 +251,7 @@ class RecordCollisions
             }
         }
 
-        $result['distinct_records']        = array_unique($distinct_records);
+        $result['distinct_records']        = array_values(array_unique($distinct_records));
         $result['affected_fields']         = array_count_values($affected_fields);
         $result['duration']                = round((microtime(true) - $start_ts), 2);   // seconds
         $result['collisions']              = $collisions;
