@@ -31,7 +31,8 @@ dc.init = function() {
             title: "Affected Records"
         },
         {
-            title: "Empty Records"
+            // title: "Empty Records"
+            title: "Pages"
         },
         {
             title: "Query Time(sec)"
@@ -353,6 +354,19 @@ dc.addRow = function(row, skip_redraw) {
     const duration         = row.hasOwnProperty('duration')                ? row.duration                        : null;
     const timestamp        = row.hasOwnProperty('timestamp')               ? row.timestamp                       : "";
 
+    // Turns out the page is a valuable piece of information
+    let pages = [];
+    const entries = Object.values(row.raw_data.results);
+    for (const entry of entries) {
+        console.log("Entry",entry);
+        if (entry.hasOwnProperty('page')) pages.push(entry.page);
+    }
+    // Get unique pages
+    const distinct = (value, index, self) => {
+        return self.indexOf(value) === index;
+    };
+    const distinct_pages = pages.filter(distinct);
+
     // const overlap    = row.hasOwnProperty('overlap')   ? row.overlap        : null;
     // const raw_data   = row.hasOwnProperty('raw_data')  ? row.raw_data       : null
 
@@ -367,7 +381,7 @@ dc.addRow = function(row, skip_redraw) {
             "data-skip-cache=1 data-pid='" + project_id + "'>Refresh</button>";
     }
     // Add a details button if there are collisions
-    if(collisions > 0) {
+    if(collisions > 0 || empty_records > 0) {
         actions = actions + "<br/><button class='mt-1 btn btn-xs btn-success text-nowrap' data-action='view-details' data-pid='" + project_id + "'>Toggle Details</button>";
     }
 
@@ -395,7 +409,9 @@ dc.addRow = function(row, skip_redraw) {
             title,
             collisions,
             records,
-            empty_records,
+            // empty_records,
+            // Replacing empty records with pages...
+            distinct_pages.join('<br>'),
             duration,
             timestamp,
             actions
