@@ -356,10 +356,11 @@ dc.addRow = function(row, skip_redraw) {
 
     // Turns out the page is a valuable piece of information
     let pages = [];
-    const entries = Object.values(row.raw_data.results);
-    for (const entry of entries) {
-        console.log("Entry",entry);
-        if (entry.hasOwnProperty('page')) pages.push(entry.page);
+    if (row.raw_data && row.raw_data.results) {
+        const entries = Object.values(row.raw_data.results);
+        for (const entry of entries) {
+            if (entry.hasOwnProperty('page')) pages.push(entry.page);
+        }
     }
     // Get unique pages
     const distinct = (value, index, self) => {
