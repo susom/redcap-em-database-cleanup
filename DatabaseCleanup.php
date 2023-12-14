@@ -51,8 +51,9 @@ class DatabaseCleanup extends \ExternalModules\AbstractExternalModule
     public function getDuplicateCounts($project_id) {
         $start_ts = microtime(true);
         $project_id = intval($project_id);
-        $sql1 = "select count(*) as 'distinct' from (select distinct * from redcap_data where project_id = " . db_escape($project_id) . ") d";
-        $sql2 = "select count(*) as 'total' from redcap_data where project_id = " . db_escape($project_id);
+        $data_table = method_exists('\REDCap', 'getDataTable') ? \REDCap::getDataTable($project_id) : "redcap_data";
+        $sql1 = "select count(*) as 'distinct' from (select distinct * from $data_table where project_id = " . db_escape($project_id) . ") d";
+        $sql2 = "select count(*) as 'total' from $data_table where project_id = " . db_escape($project_id);
         $q1 = db_result(db_query($sql1),0);
         $q2 = db_result(db_query($sql2),0);
 
@@ -129,11 +130,13 @@ class DatabaseCleanup extends \ExternalModules\AbstractExternalModule
         //$result = $this->doSql("SELECT DISTINCT * FROM redcap_data WHERE project_id = " . $pid);
         db_query("SET AUTOCOMMIT=0");
         db_query("START TRANSACTION");
+        $data_table = method_exists('\REDCap', 'getDataTable') ? \REDCap::getDataTable($pid) : "redcap_data";
 
         $result = $this->doSql("INSERT INTO redcap_data_database_cleanup_temp
-            SELECT DISTINCT * FROM redcap_data WHERE project_id = " . $pid);
+            SELECT DISTINCT * FROM $data_table WHERE project_id = " . $pid);
+        $data_table = method_exists('\REDCap', 'getDataTable') ? \REDCap::getDataTable($pid) : "redcap_data";
 
-        if ($result) $result = $this->doSql("DELETE FROM redcap_data WHERE project_id = " . $pid);
+        if ($result) $result = $this->doSql("DELETE FROM $data_table WHERE project_id = " . $pid);
 
         if ($result) $result = $this->doSql("INSERT INTO redcap_data
             SELECT * FROM redcap_data_database_cleanup_temp WHERE project_id = " . $pid);
