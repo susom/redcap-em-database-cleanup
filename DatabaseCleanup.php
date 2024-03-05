@@ -138,7 +138,7 @@ class DatabaseCleanup extends \ExternalModules\AbstractExternalModule
 
         if ($result) $result = $this->doSql("DELETE FROM $data_table WHERE project_id = " . $pid);
 
-        if ($result) $result = $this->doSql("INSERT INTO redcap_data
+        if ($result) $result = $this->doSql("INSERT INTO $data_table
             SELECT * FROM redcap_data_database_cleanup_temp WHERE project_id = " . $pid);
         if ($result) $result = $this->doSql("DELETE FROM redcap_data_database_cleanup_temp WHERE project_id = " . $pid);
 
